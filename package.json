@@ -1,0 +1,77 @@
+{
+  "name": "jslinker",
+  "description": "Preprocessor for JavaScript",
+  "homepage": "http://jslinker.shamasis.net/",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": "Shamasis Bhattacharya  <mail@shamasis.net>",
+  "contributors": [
+    {
+      "name": "Shamasis Bhattacharya",
+      "email": "mail@shamasis.net"
+    }
+  ],
+  "main": "./jslinker.js",
+  "preferGlobal": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shamasis/jslinker.git"
+  },
+  "keywords": [
+    "preprocessor",
+    "linker"
+  ],
+  "dependencies": {
+    "esprima": "~1.0.4"
+  },
+  "devDependencies": {
+    "esprima": "~1.0.4"
+  },
+  "scripts": {},
+  "jshintConfig": {
+    "bitwise": false,
+    "camelcase": true,
+    "curly": true,
+    "eqeqeq": false,
+    "es3": true,
+    "forin": false,
+    "freeze": true,
+    "immed": true,
+    "indent": 4,
+    "latedef": true,
+    "newcap": true,
+    "noarg": true,
+    "noempty": false,
+    "nonew": false,
+    "plusplus": false,
+    "quotmark": "double",
+    "undef": true,
+    "unused": true,
+    "trailing": false,
+    "asi": false,
+    "boss": true,
+    "debug": false,
+    "eqnull": true,
+    "evil": false,
+    "expr": true,
+    "funcscope": false,
+    "globalstrict": false,
+    "iterator": false,
+    "lastsemic": false,
+    "laxbreak": false,
+    "laxcomma": false,
+    "loopfunc": false,
+    "multistr": false,
+    "notypeof": false,
+    "proto": false,
+    "scripturl": false,
+    "smarttabs": false,
+    "shadow": false,
+    "sub": false,
+    "supernew": false,
+    "browser": false,
+    "devel": false,
+    "node": true,
+    "globals": {}
+  }
+}
