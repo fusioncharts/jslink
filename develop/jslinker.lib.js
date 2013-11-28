@@ -2,12 +2,11 @@
  * @module  jslinker.lib
  */
 
-const E = "",
-    SPC = " ",
+var SPC = " ",
     PLURAL_SUFFIX = "s",
-    STRING  = "string";
+    STRING  = "string",
 
-var fs = require("fs"),
+    fs = require("fs"),
     path = require("path"),
     lib;
 
@@ -57,17 +56,23 @@ module.exports = lib = {
      */
     argsArray2Object: function (args) {
         var out = {},
+            replacer,
             arg;
+
+        // This function is sent to the .replace function on argument values in order extract its content as key=value
+        // pairs. Defined here to prevent repeated definition within loop.
+        replacer = function ($glob, $1, $2) {
+            // In case the value is undefined, we set it to boolean true
+            ($2 === undefined) && ($2 = true);
+
+            // If the option already exists, push to the values array otherwise create a new values array. In case
+            // this option was discovered for the first time, we pust it as a single item of an array.
+            out.hasOwnProperty($1) && (out[$1].push ? out[$1] : (out[$1] = [out[$1]])).push($2) || (out[$1] = $2);
+        };
+
         // Loop through arguments and prepare options object.
         while (arg = args.shift()) {
-            arg.replace(/^\-\-([a-z]*)\=?([\s\S]*)?$/i, function ($glob, $1, $2) {
-                // In case the value is undefined, we set it to boolean true
-                ($2 === undefined) && ($2 = true);
-
-                // If the option already exists, push to the values array otherwise create a new values array. In case
-                // this option was discovered for the first time, we pust it as a single item of an array.
-                out.hasOwnProperty($1) && (out[$1].push ? out[$1] : (out[$1] = [out[$1]])).push($2) || (out[$1] = $2);
-            });
+            arg.replace(/^\-\-([a-z]*)\=?([\s\S]*)?$/i, replacer);
         }
         return out;
     },
@@ -79,7 +84,7 @@ module.exports = lib = {
      * returns {boolean} - `true` if the source is blacklisted and otherwise `false`.
      */
     isUnixHiddenPath: function (path) {
-        return /^\.+[^\/\.]/g.test(path);
+        return (/^\.+[^\/\.]/g).test(path);
     },
 
     /**
@@ -94,7 +99,27 @@ module.exports = lib = {
         var source,
             stat,
             item,
-            name;
+            walk;
+
+        // Iterator method that is executed on each file found under a directory. Defined here to avoid repeated
+        // definition within loop.
+        walk = function (name) {
+            // We join the items with sources while evaluating the condition below.
+            if (!lib.isUnixHiddenPath(name) && fs.existsSync(item = path.join(source, name))) {
+                // We fetch the stat of the directory item and reuse the `stat` variable to store it.
+                stat = fs.statSync(item);
+                // If this is a file, we execute callback and based on its return, break function.
+                if (stat.isFile()) {
+                    if (callback(item, name) === false) {
+                        return;
+                    }
+                }
+                // In case the item turns out to be a directory again, we recurse if needed.
+                else if (recursive && stat.isDirectory()) {
+                    lib.forEachFileIn(item, callback, recursive);
+                }
+            }
+        };
 
         // Convert to array if input is string
         if (typeof sources === STRING) {
@@ -114,23 +139,7 @@ module.exports = lib = {
                 if (stat.isDirectory()) {
                     // We fetch of all items within the directory and we iterate over the directory items and execute
                     // callback on files and if recursion is enabled, we start repeating same stuffs on them.
-                    fs.readdirSync(source).forEach(function (name) {
-                        // We join the items with sources while evaluating the condition below.
-                        if (!lib.isUnixHiddenPath(name) && fs.existsSync(item = path.join(source, name))) {
-                            // We fetch the stat of the directory item and reuse the `stat` variable to store it.
-                            stat = fs.statSync(item);
-                            // If this is a file, we execute callback and based on its return, break function.
-                            if (stat.isFile()) {
-                                if (callback(item, name) === false) {
-                                    return;
-                                }
-                            }
-                            // In case the item turns out to be a directory again, we recurse if needed.
-                            else if (recursive && stat.isDirectory()) {
-                                lib.forEachFileIn(item, callback, recursive);
-                            }
-                        }
-                    });
+                    fs.readdirSync(source).forEach(walk);
                 }
                 // In case the path is a file, then we apply callback to it and based on its return, break function.
                 else if (stat.isFile()) {

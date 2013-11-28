@@ -12,14 +12,9 @@ var lib = require("./jslinker.lib.js"),
 module.exports = {
 
     start: function (options, callback) {
-        var g,
-            modules;
-
-        g = this.fetch(options.source, options.recursive, options.includePattern, options.excludePattern,
+        var g = this.fetch(options.source, options.recursive, options.includePattern, options.excludePattern,
             options.verbose);
-        modules = this.compute(g, options.output);
         callback(null, g);
-
     },
 
     /**
@@ -49,29 +44,21 @@ module.exports = {
                 return;
             }
 
-            file = new FileMeta(path, true);
+            meta = new FileMeta(path, true);
 
-            file.modules.forEach(function (module) {
-                g.addVertex(module, file.path);
-                file.requires.forEach(function (requires) {
+            meta.modules.forEach(function (module) {
+                g.addVertex(module, meta.path);
+                meta.requires.forEach(function (requires) {
                     g.addEdge(module, requires);
                 });
             });
 
             if (verbose) {
                 console.log(name);
-                console.log("    modules ->", file.modules);
-                console.log("    requires ->", file.requires);
+                console.log("    modules ->", meta.modules);
+                console.log("    requires ->", meta.requires);
             }
         }, recursive);
         return g;
-    },
-
-    compute: function (g, output) {
-        var lead = g.vertices["jslinker"];
-    },
-
-    flatten: function (modules, output) {
-
     }
 };

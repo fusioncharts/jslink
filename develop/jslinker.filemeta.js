@@ -3,9 +3,8 @@
  * @requires jslinker.lib
  */
 
-const E = "";
-
-var lib = require("./jslinker.lib.js"),
+var E = "",
+    lib = require("./jslinker.lib.js"),
     fs = require("fs"),
     esprima = require("esprima"),
     isArray = Array.isArray,
