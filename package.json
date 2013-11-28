@@ -33,7 +33,7 @@
     "camelcase": true,
     "curly": true,
     "eqeqeq": false,
-    "es3": true,
+    "es3": false,
     "forin": false,
     "freeze": true,
     "immed": true,
