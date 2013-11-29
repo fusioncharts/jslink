@@ -1,10 +1,10 @@
 /**
- * @module jslinker
+ * @module jslinker.main
  * @requires jslinker.lib
- * @requires jslinker.parser
+ * @requires jslinker.modulecollection
  */
 var lib = require("./jslinker.lib.js"),
-    parser = require("./jslinker.parser.js");
+    ModuleCollection = require("./jslinker.modulecollection.js");
 
 module.exports = {
     options: {
@@ -26,7 +26,7 @@ module.exports = {
         // Do some sanity on the options.
         ["includePattern", "excludePattern"].forEach(function (pattern) {
             if (options[pattern] && !options[pattern].test) {
-                options[pattern] = new RegExp(pattern);
+                options[pattern] = new RegExp(options[pattern]);
             }
         });
 
@@ -39,9 +39,14 @@ module.exports = {
         });
     },
 
-    parse: function (options, callback) {
-        // Get the contents of the source files
-        return callback && parser.start(lib.fill(options, this.options), callback);
+    parse: function (options) {
+        var collection,
+            stat;
+        // Load the module dependencies from file.
+        collection = ModuleCollection.loadFromFile(options.source, options.recursive, options.includePattern,
+            options.excludePattern)
+        stat = collection.analyse();
+        console.log(stat);
     }
 };
 

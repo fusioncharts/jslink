@@ -22,12 +22,17 @@
     "linker"
   ],
   "dependencies": {
-    "esprima": "~1.0.4"
+    "esprima": "~1.0.4",
+    "walkdir": "0.0.7"
   },
   "devDependencies": {
-    "esprima": "~1.0.4"
+    "esprima": "~1.0.4",
+    "jasmine-node": "~1.11.0",
+    "jshint": "~2.3.0"
   },
-  "scripts": {},
+  "scripts": {
+    "test": "jshint develop/"
+  },
   "jshintConfig": {
     "bitwise": false,
     "camelcase": true,
