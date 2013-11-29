@@ -140,19 +140,23 @@ lib.copy(ModuleCollection.Module.prototype, {
     }
 });
 
-ModuleCollection.loadFromFile = function (path, recurse, include, exclude) {
-    var collection = new ModuleCollection(),
-        esprimaOptions = { // we define it outside to avoid redefinition in loop.
+ModuleCollection.loadFromFile = function (collection, path, recurse, include, exclude) {
+    var esprimaOptions = { // we define it outside to avoid redefinition in loop.
             comment: true
         };
+    // Ensure that collection is really a ModuleCollection
+    if (!(collection instanceof this)) {
+        throw "Only a ModuleCollection instance can be populated by ModuleCollection";
+    }
+
     // Ensure the patterns in paremeter are valid regular expression objects.
     !(include instanceof RegExp) && (include = DEFAULT_INCLUDE_PATTERN);
     !(exclude instanceof RegExp) && (exclude = DEFAULT_EXCLUDE_PATTERN);
 
     // Store some private values within collection for use during analysis of the collection.
-    collection._statFilesTotal = 0;
-    collection._statFilesProcessed = 0;
-    collection._statFilesError = 0
+    collection._statFilesTotal = collection._statFilesTotal || 0;
+    collection._statFilesProcessed = collection._statFilesProcessed || 0;
+    collection._statFilesError = collection._statFilesError || 0;
 
     // Iterate over the source directories provided the root path exists.
     fs.existsSync(path) && walkdir.sync(path, {

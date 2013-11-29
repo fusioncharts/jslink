@@ -40,11 +40,21 @@ module.exports = {
     },
 
     parse: function (options) {
-        var collection,
-            stat;
-        // Load the module dependencies from file.
-        collection = ModuleCollection.loadFromFile(options.source, options.recursive, options.includePattern,
-            options.excludePattern)
+        var collection = new ModuleCollection(),
+            stat,
+            i,
+            ii;
+
+        if (!Array.isArray(options.source)) {
+            options.source = [options.source];
+        }
+
+        for (i = 0, ii = options.source.length; i < ii; i++) {
+            // Load the module dependencies from file.
+            ModuleCollection.loadFromFile(collection, options.source[i], options.recursive, options.includePattern,
+                options.excludePattern);
+        }
+
         stat = collection.analyse();
         console.log(stat);
     }
