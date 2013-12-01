@@ -12,5 +12,5 @@ See development in action
 Clone this repository and navigate to the repository root. Execute the following command to pre-process the jslinker source file itself!
 
 ```
-node ./develop/jslinker.js --source=./develop/ --output=jslinker:jsl.js  --recursive --verbose
+node ./develop/jslinker.main.js --source=./develop/ --output=jslinker.main:./jslinker.js --overwrite
 ```

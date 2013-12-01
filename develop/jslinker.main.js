@@ -2,9 +2,12 @@
  * @module jslinker.main
  * @requires jslinker.lib
  * @requires jslinker.modulecollection
+ * @requires jslinker.moduleio
  */
 var lib = require("./jslinker.lib.js"),
     ModuleCollection = require("./jslinker.modulecollection.js");
+
+require("./jslinker.moduleio.js");
 
 module.exports = {
     options: {
@@ -30,33 +33,53 @@ module.exports = {
             }
         });
 
-        return this.parse(options, function (err, src) { // callback for output to console
-            if (err) {
-                console.warn("Error:" + err);
+        return this.parse(options, function (error, collection) { // callback for output to console
+            if (error) {
+                console.warn("Error:" + error.message);
             }
-            console.info(lib.plural(src && src.length || 0, "file") + " preprocessed.");
+            var stat = collection && collection.analyse();
+
+            console.info(lib.plural(stat && stat.filesProcessed || 0, "file") + " preprocessed.");
             console.timeEnd("Preprocessing time");
         });
     },
 
-    parse: function (options) {
+    parse: function (options, callback) {
         var collection = new ModuleCollection(),
-            stat,
+            token,
             i,
             ii;
 
-        if (!Array.isArray(options.source)) {
-            options.source = [options.source];
+        try {
+            if (!Array.isArray(options.source)) {
+                options.source = [options.source];
+            }
+
+            for (i = 0, ii = options.source.length; i < ii; i++) {
+                if (options.source[i]) {
+                    // Load the module dependencies from file.
+                    collection.loadFromFile(options.source[i], options.recursive, options.includePattern,
+                        options.excludePattern);
+                }
+            }
+
+            if (Array.isArray(options.output)) {
+                for (i = 0, ii = options.output.length; i < ii; i++) {
+                    if (options.output[i] && options.output[i].split && (token = options.output[i].split(":")).length) {
+                        collection.exportToFile(token[0], token[1], options.overwrite);
+                    }
+                }
+            }
+            else {
+                token = options.output.split(":");
+                collection.exportToFile(token[0], token[1], options.overwrite);
+            }
+        }
+        catch (err) {
+            callback && callback(err, collection);
         }
 
-        for (i = 0, ii = options.source.length; i < ii; i++) {
-            // Load the module dependencies from file.
-            ModuleCollection.loadFromFile(collection, options.source[i], options.recursive, options.includePattern,
-                options.excludePattern);
-        }
-
-        stat = collection.analyse();
-        console.log(stat);
+        callback && callback(undefined, collection);
     }
 };
 
