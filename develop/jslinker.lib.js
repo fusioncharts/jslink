@@ -1,4 +1,5 @@
 /**
+ * This module contains all the helper and library functions that are required by various modules of `jslinker`.
  * @module jslinker.lib
  */
 var E = "",
@@ -100,6 +101,7 @@ module.exports = lib = {
 
     /**
      * Checks whether a path starts with or contains a hidden file or a folder.
+     *
      * @param {string} source - The path of the file that needs to be validated.
      * returns {boolean} - `true` if the source is blacklisted and otherwise `false`.
      */

@@ -17,12 +17,22 @@ var E = "",
     walkdir = require("walkdir"),
     esprima = require("esprima"),
     lib = require("./jslinker.lib.js"),
+
     ModuleCollection = require("./jslinker.modulecollection.js");
 
-lib.copy(ModuleCollection.prototype, {
-    loadFromFile: function (path, recurse, include, exclude) {
-        var collection = this,
-            esprimaOptions = { // we define it outside to avoid redefinition in loop.
+/**
+ * Function to add file parsing statistics to collection.
+ */
+ModuleCollection.analysers.push(function (stat) {
+    // All the work for these stats were picked up during execution of loadFromFile function
+    stat.filesTotal = this._statFilesTotal;
+    stat.filesProcessed = this._statFilesProcessed;
+    stat.filesIgnored = this._statFilesTotal - this._statFilesProcessed - this._statFilesError;
+});
+
+module.exports = {
+    loadFromFile: function (collection, path, recurse, include, exclude) {
+        var esprimaOptions = { // we define it outside to avoid redefinition in loop.
                 comment: true
             };
 
@@ -109,8 +119,10 @@ lib.copy(ModuleCollection.prototype, {
                 comment = comments[i];
                 moduleName = E; // reset lock for parsing modules
 
-                // Only continue if its a block comment and starts with jsdoc syntax.
-                if (comment.type !== BLOCK || comment.value.charAt() !== ASTERISK) {
+                // Only continue if its a block comment and starts with jsdoc syntax. Also prevet blocks having @ignore
+                // tags from being parsed.
+                if (comment.type !== BLOCK || comment.value.charAt() !== ASTERISK ||
+                    /\@ignore[\@\s\r\n]/ig.test(comment.value)) {
                     continue;
                 }
                 // Search for a module definition in it.
@@ -130,10 +142,9 @@ lib.copy(ModuleCollection.prototype, {
         return collection;
     },
 
-    exportToFile: function (moduleName, path, overwrite) {
-        var module = this.get(moduleName),
-            filePath,
-            modules;
+    exportToFile: function (collection, moduleName, path, overwrite) {
+        var module = collection.get(moduleName),
+            filePath;
 
         // Validate that the name of the output module provided was discovered within source
         if (!module) {
@@ -149,7 +160,7 @@ lib.copy(ModuleCollection.prototype, {
 
         if (fs.existsSync(path)) {
             // If output path is a directory, we need to create file from source module name.
-            filePath = fs.statSync(path).isDirectory() && pathUtil.join(path, pathUtil.basename(module.value)) ||
+            filePath = fs.statSync(path).isDirectory() && pathUtil.join(path, pathUtil.basename(module.path)) ||
                 fs.statSync(path).isFile() && path;
         }
         else if (!/^\.\.$|^\.$|.*\/$/.test(path)) { // check if non existent file
@@ -167,15 +178,14 @@ lib.copy(ModuleCollection.prototype, {
         }
 
         // We need to ensure that the output path is not one of the input files processed.
-        if (this.getByValue(filePath)) {
+        if (collection.getByValue(filePath)) {
             throw lib.format("Cannot output to \"{0}\" as it contains input module \"{1}\".", filePath,
-                this.getByValue(filePath).name);
+                collection.getByValue(filePath).name);
         }
 
-        modules = this.getSerializedConnections(module.name);
-        if (modules.length) {
-            console.log(modules.join(" -> ") );
-        }
+        /**
+         * @todo  Implement calculation of dependency trees.
+         */
 
         try {
             fs.writeFileSync(filePath, E);
@@ -184,15 +194,4 @@ lib.copy(ModuleCollection.prototype, {
             throw lib.format("Cannot output {0} to {1}: {2}", module.name, filePath, err.message);
         }
     }
-});
-
-
-/**
- * Function to add file parsing statistics to collection.
- */
-ModuleCollection.analysers.push(function (stat) {
-    // All the work for these stats were picked up during execution of loadFromFile function
-    stat.filesTotal = this._statFilesTotal;
-    stat.filesProcessed = this._statFilesProcessed;
-    stat.filesIgnored = this._statFilesTotal - this._statFilesProcessed - this._statFilesError;
-});
+};

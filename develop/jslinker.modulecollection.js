@@ -1,15 +1,27 @@
 /**
+ * This module defines the `Module` and the collection of modules as `ModuleCollection`. The classes allows easy
+ * dependency calculation of modules.
  * @module jslinker.modulecollection
  * @requires jslinker.lib
  */
-var VALUE = "value",
+var PATH = "path",
 
     lib = require("./jslinker.lib.js"),
     ModuleCollection;
 
 ModuleCollection = function () {
+    /**
+     * Stores all modules
+     * @type {Object<ModuleCollection.Module>}
+     * @private
+     */
     this.modules = {}; // unique
-    this.values = {}; // unique
+    /**
+     * Stores the path pf all source files
+     * @type {Object<ModuleCollection.Module>}
+     * @private
+     */
+    this.sources = {}; // unique
 };
 
 lib.copy(ModuleCollection.prototype, {
@@ -25,8 +37,14 @@ lib.copy(ModuleCollection.prototype, {
             (this.modules[name] = new ModuleCollection.Module(name));
     },
 
-    getByValue: function (value) {
-        return this.values[value];
+    /**
+     * Gets a node by it's source file name.
+     *
+     * @param {[type]} path [description]
+     * returns {ModuleCollection.Module} [description]
+     */
+    getByValue: function (path) {
+        return this.sources[path];
     },
 
     /**
@@ -35,9 +53,9 @@ lib.copy(ModuleCollection.prototype, {
      * @param {[type]} name [description]
      * @param {[type]} path [description]
      */
-    add: function (name, value) {
-        return (this.recentmodule = this.get(name, true).define(value)) &&
-            (this.values[this.recentmodule.value] = this.recentmodule);
+    add: function (name, path) {
+        return (this.recentmodule = this.get(name, true).define(path)) &&
+            (this.sources[this.recentmodule.path] = this.recentmodule);
     },
 
     /**
@@ -64,32 +82,6 @@ lib.copy(ModuleCollection.prototype, {
             ModuleCollection.analysers[i].call(this, stat);
         }
         return stat;
-    },
-
-    getSerializedConnections: function (name, _out, _hash) {
-        var module = this.get(name),
-            out = _out || [],
-            hash =  _hash || {},
-            item,
-            dependant;
-
-        if (module && !module.serialising && module.defined()) {
-            module.serialising = true;
-            if (hash[module]) {
-                out.splice(hash[module]-1, 1);
-                hash[module] = out.push(module);
-            }
-            hash[module] = out.push(module);
-
-            for (item in module.dependants) {
-                dependant = module.dependants[item];
-                if (!dependant.serialising) {
-                    this.getSerializedConnections(dependant, out, hash);
-                }
-            }
-        }
-
-        return out;
     }
 });
 
@@ -125,10 +117,10 @@ lib.copy(ModuleCollection.Module.prototype, {
      */
     define: function (value) {
         // Redefinition is not allowed.
-        if (this.hasOwnProperty(VALUE)) {
+        if (this.hasOwnProperty(PATH)) {
             throw lib.format("Module {0} is already defined.", this.name);
         }
-        this.value = lib.stringLike(value); // store
+        this.path = lib.stringLike(value); // store
         return this; // chain
     },
 
@@ -136,7 +128,7 @@ lib.copy(ModuleCollection.Module.prototype, {
      * Check whether the module has been defined formally. Modules can be created and yet be not marked as defined.
      */
     defined: function () {
-        return this.hasOwnProperty(VALUE);
+        return this.hasOwnProperty(PATH);
     },
 
     /**

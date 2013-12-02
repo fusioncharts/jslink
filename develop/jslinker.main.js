@@ -5,9 +5,8 @@
  * @requires jslinker.moduleio
  */
 var lib = require("./jslinker.lib.js"),
-    ModuleCollection = require("./jslinker.modulecollection.js");
-
-require("./jslinker.moduleio.js");
+    ModuleCollection = require("./jslinker.modulecollection.js"),
+    moduleIO = require("./jslinker.moduleio.js");
 
 module.exports = {
     options: {
@@ -35,7 +34,7 @@ module.exports = {
 
         return this.parse(options, function (error, collection) { // callback for output to console
             if (error) {
-                console.warn("Error:" + error.message);
+                console.warn(error);
             }
             var stat = collection && collection.analyse();
 
@@ -47,6 +46,7 @@ module.exports = {
     parse: function (options, callback) {
         var collection = new ModuleCollection(),
             token,
+            error, // to pass on from try-catch to callback.
             i,
             ii;
 
@@ -58,7 +58,7 @@ module.exports = {
             for (i = 0, ii = options.source.length; i < ii; i++) {
                 if (options.source[i]) {
                     // Load the module dependencies from file.
-                    collection.loadFromFile(options.source[i], options.recursive, options.includePattern,
+                    moduleIO.loadFromFile(collection, options.source[i], options.recursive, options.includePattern,
                         options.excludePattern);
                 }
             }
@@ -66,20 +66,20 @@ module.exports = {
             if (Array.isArray(options.output)) {
                 for (i = 0, ii = options.output.length; i < ii; i++) {
                     if (options.output[i] && options.output[i].split && (token = options.output[i].split(":")).length) {
-                        collection.exportToFile(token[0], token[1], options.overwrite);
+                        moduleIO.exportToFile(collection, token[0], token[1], options.overwrite);
                     }
                 }
             }
             else {
                 token = options.output.split(":");
-                collection.exportToFile(token[0], token[1], options.overwrite);
+                moduleIO.exportToFile(collection, token[0], token[1], options.overwrite);
             }
         }
         catch (err) {
-            callback && callback(err, collection);
+            error = err;
         }
 
-        callback && callback(undefined, collection);
+        callback && callback(error, collection);
     }
 };
 
