@@ -89,6 +89,20 @@ lib.copy(ModuleCollection.prototype, {
             ModuleCollection.analysers[i].call(this, stat);
         }
         return stat;
+    },
+
+    toString: function () {
+        var out = "digraph G {\n",
+            dependency,
+            i,
+            ii;
+
+        for (i = 0, ii = this.dependencies.length; i < ii; i++) {
+            dependency = this.dependencies[i];
+            out += lib.format("\t\"{0}\" -> \"{1}\";\n", dependency.module, dependency.dependant);
+        }
+
+        return (out += "}");
     }
 });
 

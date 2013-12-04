@@ -146,7 +146,7 @@ module.exports = {
     },
 
     exportAll: function (collection) {
-
+        fs.writeFileSync("./out.dot", collection.toString());
     },
 
     exportToFile: function (collection, moduleName, path, overwrite) {
