@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+
+echo "Linting..."
+jshint --version
+jshint ./develop/ --verbose
+
+echo "Testing..."
+
+echo "Build started..."

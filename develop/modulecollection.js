@@ -2,11 +2,11 @@
  * This module defines the `Module` and the collection of modules as `ModuleCollection`. The classes allows easy
  * dependency calculation of modules.
  * @module jslinker.modulecollection
+ *
  * @requires jslinker.lib
  */
 var PATH = "path",
-
-    lib = require("./jslinker.lib.js"),
+    lib = require("./lib.js"),
     ModuleCollection;
 
 ModuleCollection = function () {
@@ -22,6 +22,11 @@ ModuleCollection = function () {
      * @private
      */
     this.sources = {}; // unique
+
+    /**
+     * Stores all connections
+     */
+    this.dependencies = [];
 };
 
 lib.copy(ModuleCollection.prototype, {
@@ -40,22 +45,23 @@ lib.copy(ModuleCollection.prototype, {
     /**
      * Gets a node by it's source file name.
      *
-     * @param {[type]} path [description]
-     * returns {ModuleCollection.Module} [description]
+     * @param {string} value [description]
+     * @returns {ModuleCollection.Module} [description]
      */
-    getByValue: function (path) {
-        return this.sources[path];
+    getByValue: function (value) {
+        return this.sources[value];
     },
 
     /**
      * Add a new module to the collection
      *
-     * @param {[type]} name [description]
-     * @param {[type]} path [description]
+     * @param {string} name
+     * @param {string} valuevalue
+     * @returns {ModuleCollection.Module}
      */
-    add: function (name, path) {
-        return (this.recentmodule = this.get(name, true).define(path)) &&
-            (this.sources[this.recentmodule.path] = this.recentmodule);
+    add: function (name, valuevalue) {
+        return (this.recentmodule = this.get(name, true).define(valuevalue)) &&
+            (this.sources[this.recentmodule.valuevalue] = this.recentmodule);
     },
 
     /**
@@ -66,7 +72,8 @@ lib.copy(ModuleCollection.prototype, {
      * returns {[type]} [description]
      */
     connect: function (name, dependency) {
-        return this.get(name, true).needs(this.get(dependency, true));
+        return (this.dependencies.push((this.recentdependency =
+            new ModuleCollection.Dependency(this.get(name, true), this.get(dependency, true)))), this.recentdependency);
     },
 
     /**
@@ -85,32 +92,45 @@ lib.copy(ModuleCollection.prototype, {
     }
 });
 
+ModuleCollection.Dependency = function (module, dependant) {
+    // Mark the dependency within modules.
+    this.module = module.needs(this.dependant = dependant, true);
+    // Store the dependency within both the connected modules.
+    module.connections.push(this);
+    dependant.connections.push(this);
+};
+
 ModuleCollection.Module = function (name, value) {
+    /**
+     * @type {string}
+     */
     this.name = lib.stringLike(name);
-    value && this.define(value);
-    this.dependants = {};
 
     // Validate the name to not be blank.
     if (!this.name) {
-        throw "Module name cannot be blank";
+        throw "Module name cannot be blank.";
     }
+
+    this.degree = 0;
+
+    /**
+     * Stores all depencies.
+     * @type {Object<ModuleCollection.Module>}
+     */
+    this.dependants = {};
+
+    /**
+     * Stores all connections
+     * @type {Array}
+     */
+    this.connections = [];
+
+    // Define the node if passed as part of constructor.
+    value && this.define(value);
 };
 
-// Functions to analyse the collection.
-ModuleCollection.analysers = [function (stat) {
-    stat.orphanModules = 0;
-    stat.definedModules = 0;
-
-    for (var prop in this.modules) {
-        stat.orphanModules++; // assume orphan unless detected to be defined.
-        if (this.modules[prop].defined()) {
-            stat.definedModules++;
-            stat.orphanModules--; // since defined, no longer orphan.
-        }
-    }
-}];
-
 lib.copy(ModuleCollection.Module.prototype, {
+
     /**
      * Modules can be created and yet be not marked as defined. Definition takes place only when a value is passed to
      * it - usually the source path.
@@ -156,6 +176,7 @@ lib.copy(ModuleCollection.Module.prototype, {
         }
 
         this.dependants[name] = module;
+        module.degree++;
 
         return this; // chain
     },
@@ -164,5 +185,19 @@ lib.copy(ModuleCollection.Module.prototype, {
         return this.name;
     }
 });
+
+
+// Functions to analyse the collection.
+ModuleCollection.analysers = [function (stat) {
+    var module;
+
+    stat.orphanModules = [];
+    stat.definedModules = [];
+
+    for (var prop in this.modules) {
+        module = this.modules[prop];
+        stat[module.defined() ? "definedModules" : "orphanModules"].push(module);
+    }
+}];
 
 module.exports = ModuleCollection;

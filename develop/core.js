@@ -1,12 +1,14 @@
 /**
- * @module jslinker.main
+ * @module jslinker.core
  * @requires jslinker.lib
  * @requires jslinker.modulecollection
  * @requires jslinker.moduleio
  */
-var lib = require("./jslinker.lib.js"),
-    ModuleCollection = require("./jslinker.modulecollection.js"),
-    moduleIO = require("./jslinker.moduleio.js");
+var lib = require("./lib.js"),
+    ansi = require("ansi"),
+    cursor = ansi(process.stdout),
+    ModuleCollection = require("./modulecollection.js"),
+    moduleIO = require("./moduleio.js");
 
 module.exports = {
     options: {
@@ -33,13 +35,24 @@ module.exports = {
         });
 
         return this.parse(options, function (error, collection) { // callback for output to console
-            if (error) {
+            cursor.reset();
+            if (error || !collection) {
+                cursor.red();
                 console.warn(error);
             }
-            var stat = collection && collection.analyse();
+            else {
 
-            console.info(lib.plural(stat && stat.filesProcessed || 0, "file") + " preprocessed.");
+                var stat = collection.analyse();
+                if (stat.orphanModules.length) {
+                    cursor.red();
+                    console.log(lib.plural(stat.orphanModules.length, "orphan module") + " found.");
+                }
+                cursor.green();
+                console.info(lib.plural(stat.filesProcessed || 0, "file") + " preprocessed.");
+
+            }
             console.timeEnd("Preprocessing time");
+            cursor.reset();
         });
     },
 
@@ -70,9 +83,12 @@ module.exports = {
                     }
                 }
             }
-            else {
+            else if (options.output) {
                 token = options.output.split(":");
                 moduleIO.exportToFile(collection, token[0], token[1], options.overwrite);
+            }
+            else {
+                moduleIO.exportAll(collection);
             }
         }
         catch (err) {

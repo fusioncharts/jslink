@@ -28,10 +28,13 @@
   "devDependencies": {
     "esprima": "~1.0.4",
     "jasmine-node": "~1.11.0",
-    "jshint": "~2.3.0"
+    "jshint": "~2.3.0",
+    "closurecompiler": "~1.1.5",
+    "ansi": "~0.2.1"
   },
   "scripts": {
-    "test": "jshint develop/"
+    "test": "jshint develop/",
+    "build": "./develop/build"
   },
   "jshintConfig": {
     "bitwise": false,

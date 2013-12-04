@@ -1,7 +1,10 @@
 /**
+ * This module consists of all the filesystem input output operations needed to load modules from filesystem and export
+ * them back. Note that the usage of this module requires one to also include `modules` module in their scope.
  * @module jslinker.moduleio
- * @requires jslinker.modulecollection
+ *
  * @requires jslinker.lib
+ * @requires jslinker.modulecollection
  */
 
 var E = "",
@@ -16,9 +19,9 @@ var E = "",
     pathUtil = require("path"),
     walkdir = require("walkdir"),
     esprima = require("esprima"),
-    lib = require("./jslinker.lib.js"),
+    lib = require("./lib.js"),
 
-    ModuleCollection = require("./jslinker.modulecollection.js");
+    ModuleCollection = require("./modulecollection.js");
 
 /**
  * Function to add file parsing statistics to collection.
@@ -110,7 +113,7 @@ module.exports = {
             dependencyAdder = function ($glob, $1) {
                 // Extract the value of the token.
                 if ($1 && ($1 = $1.trim())) {
-                    collection.connect(moduleName, $1);
+                    collection.connect($1, moduleName);
                 }
             };
 
@@ -140,6 +143,10 @@ module.exports = {
         });
 
         return collection;
+    },
+
+    exportAll: function (collection) {
+
     },
 
     exportToFile: function (collection, moduleName, path, overwrite) {
