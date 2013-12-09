@@ -1,10 +1,10 @@
 /**
  * This module consists of all the filesystem input output operations needed to load modules from filesystem and export
  * them back. Note that the usage of this module requires one to also include `modules` module in their scope.
- * @module jslinker.moduleio
+ * @module io
  *
- * @requires jslinker.lib
- * @requires jslinker.modulecollection
+ * @requires lib
+ * @requires collection
  */
 
 var E = "",
@@ -14,6 +14,7 @@ var E = "",
     DEFAULT_EXCLUDE_PATTERN = /^$/,
     DEFAULT_DEFINE_TAG_PATTERN = /\@module\s*([^\@\r\n]*)/ig,
     DEFAULT_INCLUDE_TAG_PATTERN = /\@requires\s*([^\@\r\n]*)/ig,
+    DEFAULT_DOT_FILENAME = "./jslinker.dot",
 
     fs = require("fs"),
     pathUtil = require("path"),
@@ -21,7 +22,7 @@ var E = "",
     esprima = require("esprima"),
     lib = require("./lib.js"),
 
-    ModuleCollection = require("./modulecollection.js");
+    ModuleCollection = require("./collection.js");
 
 /**
  * Function to add file parsing statistics to collection.
@@ -113,7 +114,7 @@ module.exports = {
             dependencyAdder = function ($glob, $1) {
                 // Extract the value of the token.
                 if ($1 && ($1 = $1.trim())) {
-                    collection.connect($1, moduleName);
+                    collection.connect(moduleName, $1);
                 }
             };
 
@@ -145,8 +146,24 @@ module.exports = {
         return collection;
     },
 
+    exportDependencyMap: function (collection, path, overwrite) {
+        // Get the final path to the export file.
+        path = lib.writeableFile(path, DEFAULT_DOT_FILENAME, overwrite);
+
+        // Ensure that the output file is not one of the input files!
+        if (collection.sources[pathUtil.resolve(path)]) {
+            throw new Error("The dot output file path overwrites input files!");
+        }
+
+        return fs.writeFileSync(path, collection.toString());
+    },
+
     exportAll: function (collection) {
-        fs.writeFileSync("./out.dot", collection.toString());
+        /**
+         * @todo Coplete implementation of output to files.
+         */
+        console.log("Sorted Output:");
+        console.log(JSON.stringify(collection.serialize(), null, 4));
     },
 
     exportToFile: function (collection, moduleName, path, overwrite) {
@@ -185,9 +202,9 @@ module.exports = {
         }
 
         // We need to ensure that the output path is not one of the input files processed.
-        if (collection.getByValue(filePath)) {
+        if (collection.getBySource(filePath)) {
             throw lib.format("Cannot output to \"{0}\" as it contains input module \"{1}\".", filePath,
-                collection.getByValue(filePath).name);
+                collection.getBySource(filePath).name);
         }
 
         /**

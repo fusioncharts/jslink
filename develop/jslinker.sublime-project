@@ -36,6 +36,6 @@
         // The text which should be used for a @return tag. By default,
         // @return is used, however this can be changed to @returns if you
         // use that style.
-        "jsdocs_return_tag": "returns"
+        "jsdocs_return_tag": "@returns"
     }
 }

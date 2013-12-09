@@ -1,23 +1,29 @@
 /**
- * @module jslinker.core
- * @requires jslinker.lib
- * @requires jslinker.modulecollection
- * @requires jslinker.moduleio
+ * Preprocessor for JavaScript
+ * @module jslinker
+ *
+ * @requires lib
+ * @requires collection
+ * @requires io
  */
 var lib = require("./lib.js"),
     ansi = require("ansi"),
     cursor = ansi(process.stdout),
-    ModuleCollection = require("./modulecollection.js"),
-    moduleIO = require("./moduleio.js");
+    ModuleCollection = require("./collection.js"),
+    moduleIO = require("./io.js");
 
-module.exports = {
+
+module.exports = /** @lends module:jslinker */ {
     options: {
         recursive: false,
         includePattern: /.+\.js$/,
         excludePattern: /^$/,
-        destination: "./mods"
+        destination: "./jslinker"
     },
 
+    /**
+     * Process commandline
+     */
     cli: function () {
         // Parse all command-line arguments as an object and populate the unspecified properties with default
         // options.
@@ -35,6 +41,8 @@ module.exports = {
         });
 
         return this.parse(options, function (error, collection) { // callback for output to console
+            var i;
+
             cursor.reset();
             if (error || !collection) {
                 cursor.red();
@@ -46,9 +54,14 @@ module.exports = {
                 if (stat.orphanModules.length) {
                     cursor.red();
                     console.log(lib.plural(stat.orphanModules.length, "orphan module") + " found.");
+                    i = stat.orphanModules.length;
+                    while (i--) {
+                        console.log(lib.format("- {0}", stat.orphanModules[i].name));
+                    }
                 }
                 cursor.green();
-                console.info(lib.plural(stat.filesProcessed || 0, "file") + " preprocessed.");
+                console.info(lib.format("{0}, {1} processed.", lib.plural(stat.filesProcessed || 0, "file"),
+                    lib.plural(stat.definedModules.length || 0, "module")));
 
             }
             console.timeEnd("Preprocessing time");
@@ -56,6 +69,11 @@ module.exports = {
         });
     },
 
+    /**
+     * @param {object} options
+     * @param {module:jslinker~parseResult=} [callback]
+     * @returns {ModuleCollection}
+     */
     parse: function (options, callback) {
         var collection = new ModuleCollection(),
             token,
@@ -85,17 +103,27 @@ module.exports = {
             }
             else if (options.output) {
                 token = options.output.split(":");
-                moduleIO.exportToFile(collection, token[0], token[1], options.overwrite);
+                moduleIO.exportToFile(collection, token[0], token[1], !!options.overwrite);
             }
             else {
                 moduleIO.exportAll(collection);
+            }
+
+            if (options.exportmap) {
+                moduleIO.exportDependencyMap(collection, options.exportmap, !!options.overwrite);
             }
         }
         catch (err) {
             error = err;
         }
 
+        /**
+         * @callback module:jslinker~parseResult
+         * @param {Error=} [error]
+         * @param {module:collection~ModuleCollection} [collection]
+         */
         callback && callback(error, collection);
+        return collection;
     }
 };
 
