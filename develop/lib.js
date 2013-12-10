@@ -134,7 +134,7 @@ module.exports = lib = /** @lends module:lib */ {
      * @returns {boolean}
      */
     isUnixDirectory: function (path) {
-        return (/(^\.+$)|(\/$)/).test(path);
+        return (/(^\.{1,2}$)|(\/$)/).test(path);
     },
 
     /**
@@ -145,7 +145,9 @@ module.exports = lib = /** @lends module:lib */ {
      * @returns {string}
      */
     writeableFile: function (path, defaultPath , overwrite) {
-        var stat;
+        var stat,
+            dirlist,
+            dir;
 
         // Check for hidden or invalid path
         if (!path) {
@@ -185,11 +187,27 @@ module.exports = lib = /** @lends module:lib */ {
                 throw new TypeError("The output path does not point to a file.");
             }
         }
+        // If file does not exist then we climb up the directory tree and recover the tree of folders that needs to be
+        // created.
         else {
-            // if path name looks like a file and its parent is an existing directory, then we are still good to go.
-            if (!(!lib.isUnixDirectory(path) && fs.existsSync(pathUtil.dirname(path)) &&
-                fs.statSync(pathUtil.dirname(path)).isDirectory())) {
-                throw new Error("Dot export location not found.");
+
+            dirlist = [];
+            if (lib.isUnixDirectory(path)) {
+                dir = path;
+                path += pathUtil.basename(defaultPath); // add file name if path is a directory
+            }
+            else {
+                dir = pathUtil.dirname(path);
+            }
+
+            // Extract directories within the path that does not exist.
+            while (!fs.existsSync(dir) && (dir !== "/")) {
+                dirlist.push(dir);
+                dir = pathUtil.dirname(dir);
+            }
+            // We now slowly create the directories recovered from the above loop.
+            while (dir = dirlist.pop()) {
+                fs.mkdirSync(dir); // let any error bubble.
             }
         }
 
