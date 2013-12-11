@@ -9,6 +9,17 @@ Why jslinker?
 Allows one to define dependencies in ways similar to `C`/`C++` `#include` and `#define` in a syntax compatible with
 Closure Compiler and jsDocs.
 
+Commandline Options
+-------------------
+- `--recursive`
+- `--overwrite`
+- `--exportmap` or `--exportmap=filename.dot`
+- `--source=pathtofileordirectory`
+- `--includePattern=RegularExpression`
+- `--excludePattern=ReqularExpression`
+- `--version`
+
+
 See development in action
 -------------------------
 Clone this repository and navigate to the repository root. Execute the following command to pre-process the jslinker

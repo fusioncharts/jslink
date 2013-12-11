@@ -15,6 +15,7 @@ var E = "",
     DEFAULT_DEFINE_TAG_PATTERN = /\@module\s*([^\@\r\n]*)/ig,
     DEFAULT_INCLUDE_TAG_PATTERN = /\@requires\s*([^\@\r\n]*)/ig,
     DEFAULT_DOT_FILENAME = "./jslinker.dot",
+    DEFAULT_OUT_DESTINATION = "./", /** @todo finalise default */
 
     fs = require("fs"),
     pathUtil = require("path"),
@@ -147,6 +148,7 @@ module.exports = {
     },
 
     exportDependencyMap: function (collection, path, overwrite) {
+        /** @todo refactor */
         // Get the final path to the export file.
         path = lib.writeableFile(path, DEFAULT_DOT_FILENAME, overwrite);
 
@@ -158,64 +160,88 @@ module.exports = {
         return fs.writeFileSync(path, collection.toString());
     },
 
-    exportAll: function (collection) {
-        /**
-         * @todo Coplete implementation of output to files.
-         */
-        console.log("Sorted Output:");
-        console.log(JSON.stringify(collection.serialize(), null, 4));
-    },
+    exportToFile: function (collection, suggestedModules, destination, overwrite) {
+        /** @todo refactor */
+        var serialized = collection.serialize(suggestedModules && Object.keys(suggestedModules)), // get the sorted and serialised set of modules.
+            bundles = [],
+            suggestedModuleKeys,
+            item;
 
-    exportToFile: function (collection, moduleName, path, overwrite) {
-        var module = collection.get(moduleName),
-            filePath;
-
-        // Validate that the name of the output module provided was discovered within source
-        if (!module) {
-            throw lib.format("Module {0} not found for export.", moduleName);
+        // Validate and sanitize suggested modules and paths.
+        if (!suggestedModules) {
+            suggestedModules = {};
+        }
+        destination = lib.writeableFolder(destination, DEFAULT_OUT_DESTINATION);
+        if (!fs.statSync(destination).isDirectory()) {
+            throw lib.format("Out put destination is not a directory: \"{0}\"", destination);
         }
 
-        // Output location must be provided. We need to validate this since blank path gets treated as PWD.
-        if (!(path && typeof path.toString === "function")) {
-            throw lib.format("Invalid output location: \"{0}\"", path);
-        }
 
-        path = pathUtil.resolve(path); // deal in absolutes
+        // Iterate on all set of connected module groups within the collection and create array of sourcefiles that
+        // contain these modules.
+        serialized.forEach(function (modules) {
+            var stack = [],
+                sources = {}, // use this to check whether a source was already pushed in stack.
+                suggested,
+                i;
 
-        if (fs.existsSync(path)) {
-            // If output path is a directory, we need to create file from source module name.
-            filePath = fs.statSync(path).isDirectory() && pathUtil.join(path, pathUtil.basename(module.path)) ||
-                fs.statSync(path).isFile() && path;
-        }
-        else if (!/^\.\.$|^\.$|.*\/$/.test(path)) { // check if non existent file
-            filePath = pathUtil.basename(path);
-        }
+            if (!modules.length) {
+                return;
+            }
 
-        // In case a file path was not discovered, we cannot proceed.
-        if (!filePath) {
-            throw lib.format("Invalid output location: \"{0}\"", filePath);
-        }
+            i = modules.length;
+            while (i--) {
+                if (sources[modules[i].source]) {
+                    break;
+                }
+                stack.unshift(modules[i].source);
+                sources[modules[i].source] = true; // add to flag
+            }
 
-        // Once file has been discovered, we cannot proceed if not asked to overwrite.
-        if (!overwrite && fs.existsSync(filePath)) {
-            throw lib.format("Cannot overwrite {0}", filePath);
-        }
+            suggested = false;
+            for (item in suggestedModules) {
+                suggested = collection.get(item);
+                if ((i = modules.indexOf(suggested)) === -1) {
+                    continue;
+                }
+                if (suggestedModules[item] === true || !suggestedModules[item]) {
+                    suggestedModules[item] = pathUtil.basename(modules[i].source);
+                }
+                else {
+                    suggestedModules[item] = suggestedModules[item];
+                }
 
-        // We need to ensure that the output path is not one of the input files processed.
-        if (collection.getBySource(filePath)) {
-            throw lib.format("Cannot output to \"{0}\" as it contains input module \"{1}\".", filePath,
-                collection.getBySource(filePath).name);
-        }
+                if (/^[^\/].*/.test(suggestedModules[item])) {
+                    suggestedModules[item] = pathUtil.join(destination, suggestedModules[item]);
+                }
 
-        /**
-         * @todo  Implement calculation of dependency trees.
-         */
+                bundles.push({
+                    sources: stack,
+                    output: pathUtil.resolve(suggestedModules[item])
+                });
+                delete suggestedModules[item];
+            }
 
-        try {
-            fs.writeFileSync(filePath, E);
-        }
-        catch (err) {
-            throw lib.format("Cannot output {0} to {1}: {2}", module.name, filePath, err.message);
+            if (!suggested) {
+                bundles[modules[modules.length - 1].name] = {
+                    sources: stack,
+                    output: pathUtil.resolve(pathUtil.join(DEFAULT_OUT_DESTINATION, pathUtil.basename(modules[modules.length - 1].source) ))
+                };
+            }
+
+        });
+
+        for (var bundle in bundles) {
+            bundle = bundles[bundle];
+
+            if (fs.existsSync(bundle.output) && overwrite === false) {
+                throw "Cannot overwrite " + bundle.output;
+            }
+
+            fs.openSync(bundle.output, 'w');
+            bundle.sources.forEach(function (sourceFileName) {
+                fs.appendFileSync(bundle.output, fs.readFileSync(sourceFileName));
+            });
         }
     }
 };

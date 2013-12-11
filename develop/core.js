@@ -1,12 +1,13 @@
 /**
  * Preprocessor for JavaScript
- * @module jslinker
+ * @module core
  *
  * @requires lib
  * @requires collection
  * @requires io
  */
-var lib = require("./lib.js"),
+var VERSIONSTRING = "1.0.0",
+    lib = require("./lib.js"),
     ansi = require("ansi"),
     cursor = ansi(process.stdout),
     ModuleCollection = require("./collection.js"),
@@ -14,20 +15,34 @@ var lib = require("./lib.js"),
 
 
 module.exports = /** @lends module:jslinker */ {
-    options: {
+    /**
+     * Version of jsLinker
+     * @returns {string}
+     */
+    version: function () {
+        return VERSIONSTRING;
+    },
+
+    options: { /** @todo finalise how to use this implementation */
         recursive: false,
         includePattern: /.+\.js$/,
         excludePattern: /^$/,
-        destination: "./jslinker"
+        destination: "./"
     },
 
     /**
      * Process commandline
      */
-    cli: function () {
+    cli: function () { /** @todo refactor */
         // Parse all command-line arguments as an object and populate the unspecified properties with default
         // options.
         var options = lib.argsArray2Object(process.argv.slice(2));
+
+        // If version query is sent then ignore all other options
+        if (options.version) {
+            console.log("jslinker " + VERSIONSTRING);
+            return;
+        }
 
         // Notify that the processing started and also keep a note of the time.
         console.time("Preprocessing time");
@@ -74,10 +89,11 @@ module.exports = /** @lends module:jslinker */ {
      * @param {module:jslinker~parseResult=} [callback]
      * @returns {ModuleCollection}
      */
-    parse: function (options, callback) {
+    parse: function (options, callback) { /** @todo refactor */
         var collection = new ModuleCollection(),
             token,
             error, // to pass on from try-catch to callback.
+            outputModules,
             i,
             ii;
 
@@ -95,18 +111,40 @@ module.exports = /** @lends module:jslinker */ {
             }
 
             if (Array.isArray(options.output)) {
+                outputModules = {};
                 for (i = 0, ii = options.output.length; i < ii; i++) {
                     if (options.output[i] && options.output[i].split && (token = options.output[i].split(":")).length) {
-                        moduleIO.exportToFile(collection, token[0], token[1], options.overwrite);
+                        if (token[0]) {
+                            token[0] = token[0].replace(/\\\:/g, ":");
+                            outputModules[token[0]] = token[1] && token[1].toString && token[1].toString() || true;
+                        }
+                        else {
+                            throw "Invalid output suggestion: " + options.output[i];
+                        }
                     }
                 }
+
+                if (!Object.keys(outputModules).length) {
+                    moduleIO.exportToFile(collection, null, options.destination, !!options.overwrite);
+                }
+                moduleIO.exportToFile(collection, outputModules, options.destination, !!options.overwrite);
+
             }
-            else if (options.output) {
+            else if (options.output && options.output.split) {
                 token = options.output.split(":");
-                moduleIO.exportToFile(collection, token[0], token[1], !!options.overwrite);
+                if (token[0]) {
+                    token[0] = token[0].replace(/\\\:/g, ":");
+                    outputModules = {};
+                    outputModules[token[0]] = token[1] && token[1].toString && token[1].toString() || true;;
+                }
+                else {
+                    throw "Invalid output suggestion: " + options.output;
+                }
+
+                moduleIO.exportToFile(collection, outputModules, options.destination, !!options.overwrite);
             }
             else {
-                moduleIO.exportAll(collection);
+                moduleIO.exportToFile(collection, null, options.destination, !!options.overwrite);
             }
 
             if (options.exportmap) {
@@ -126,5 +164,3 @@ module.exports = /** @lends module:jslinker */ {
         return collection;
     }
 };
-
-module.exports.cli();

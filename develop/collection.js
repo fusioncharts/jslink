@@ -34,7 +34,7 @@ collectionTopoSort = function (module, sortStack) {
         delete module.topologicalMarker;
         module.sorting = true;
         // Push into the right index
-        (sortStack[module.index] || (sortStack[module.index] = [])).push(module.name);
+        (sortStack[module.index] || (sortStack[module.index] = [])).push(module);
     }
 };
 
@@ -192,17 +192,30 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
     /**
      * Serialises the modules using topological sorting mechanism and returns an array of arrays containing all modules
      * in the sorted order.
+     * @param {string|module:collection~ModuleCollection.Module=} [considerModules]
      * @returns {Array<Array>}
      */
-    serialize: function () {
+    serialize: function (considerModules) {
         var sortStack = [], // array to hold all the sorted modules.
             adjacencyPoint = 0,
+            modules = this.modules,
             module;
+
+        // Create a common object based on whether root module is provided.
+        if (considerModules && considerModules.length) {
+            modules = {};
+            (Array.isArray(considerModules) ? considerModules : [considerModules]).forEach(function (moduleName) {
+                modules[moduleName] = this.get(moduleName);
+                if (!modules[moduleName]) {
+                    throw new Error(lib.format("Module \"{0}\" is not defined.", moduleName));
+                }
+            }, this);
+        }
 
         // Iterate over all modules, index them and run topological sort. Indexing will always go faster than sorting
         // since index happens on both ingress and egress edges at the same time, as such 2x the cycle of sorting.
-        for (module in this.modules) {
-            module = this.modules[module];
+        for (module in modules) {
+            module = modules[module];
             if (!module.indexing) {
                 collectionAdjacencyIndex(module, adjacencyPoint++);
             }
@@ -213,9 +226,9 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
 
         // Iterate over modules once more to remove all sorting flags. This is unneeded if the intention is to sort
         // once only.
-        for (module in this.modules) {
-            delete this.modules[module].sorting;
-            delete this.modules[module].indexing;
+        for (module in modules) {
+            delete modules[module].sorting;
+            delete modules[module].indexing;
         }
 
         return sortStack;
@@ -396,10 +409,6 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
             throw lib.format("Module {0} cannot depend on itself!", this);
         }
 
-        /**
-         * @todo Check dependency integrity failure - when one module is marked as dependent of other bot the other is
-         * not marked as a requirement of the one.
-         */
         if (this.requires[requirement] || requirement.dependants[this]) {
             throw lib.format("{1} already marked as requirement of {0}", this.name, requirement.name);
         }
