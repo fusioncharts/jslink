@@ -23,7 +23,7 @@ collectionTopoSort = function (module, sortStack) {
 
     if (module.topologicalMarker) {
         delete module.topologicalMarker;
-        throw "Cyclic dependency error discovered in module: " + module.name;
+        throw "Cyclic dependency error discovered while parsing: " + module.name;
     }
 
     if (!module.sorting) {
@@ -34,7 +34,7 @@ collectionTopoSort = function (module, sortStack) {
         delete module.topologicalMarker;
         module.sorting = true;
         // Push into the right index
-        (sortStack[module.index] || (sortStack[module.index] = [])).push(module.name);
+        (sortStack[module.index] || (sortStack[module.index] = [])).push(module);
     }
 };
 
@@ -197,12 +197,13 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
     serialize: function () {
         var sortStack = [], // array to hold all the sorted modules.
             adjacencyPoint = 0,
+            modules = this.modules,
             module;
 
         // Iterate over all modules, index them and run topological sort. Indexing will always go faster than sorting
         // since index happens on both ingress and egress edges at the same time, as such 2x the cycle of sorting.
-        for (module in this.modules) {
-            module = this.modules[module];
+        for (module in modules) {
+            module = modules[module];
             if (!module.indexing) {
                 collectionAdjacencyIndex(module, adjacencyPoint++);
             }
@@ -213,9 +214,9 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
 
         // Iterate over modules once more to remove all sorting flags. This is unneeded if the intention is to sort
         // once only.
-        for (module in this.modules) {
-            delete this.modules[module].sorting;
-            delete this.modules[module].indexing;
+        for (module in modules) {
+            delete modules[module].sorting;
+            delete modules[module].indexing;
         }
 
         return sortStack;
@@ -223,7 +224,7 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
 
 
     toString: function () {
-        var out = "digraph G {",
+        var out = "digraph jsLinker {\n",
             module,
             dependant;
 
@@ -233,11 +234,11 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
             // In case there are no requirements, output the module as an isolated one.
             if (module.numberOfDependants) {
                 for (dependant in module.dependants) {
-                    out += lib.format("\"{0}\"->\"{1}\";", module, dependant);
+                    out += lib.format("\"{0}\"->\"{1}\";\n", module, dependant);
                 }
             }
             else {
-                out += "\"" + module.name + "\";";
+                out += "\"" + module.name + "\";\n";
             }
 
         }
@@ -345,6 +346,12 @@ ModuleCollection.Module = function (name, source) {
     this.numberOfDependants = 0;
 
     /**
+     * Export directives
+     * @property {Object<Array>} [targets]
+     */
+    // this.targets = []; // available after addTarget()
+
+    /**
      * The source file path that defines this module. This is to be used as a getter and should be set using the
      * {@link module:collection~ModuleCollection.Module#define} method.
      * @type {string}
@@ -375,6 +382,25 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
     },
 
     /**
+     * Add the list of target modules marked for export.
+     * @param {module:collection~ModuleCollection.Module} module
+     * @param {string} meta
+     */
+    addTarget: function (meta) {
+        // If export meta is not defined then we treat the module name as meta.
+        if (!meta) {
+            meta = this.name;
+        }
+        // We add the meta information unless there is a duplicate. At least the same module should not have two same
+        // export meta!
+        if ((this.targets || (this.targets = [])).indexOf(meta) === -1) {
+            this.targets.push(meta);
+        }
+
+        return module;
+    },
+
+    /**
      * Check whether the module has been defined formally. Modules can be created and yet be not marked as defined.
      *
      * @returns {boolean}
@@ -396,10 +422,6 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
             throw lib.format("Module {0} cannot depend on itself!", this);
         }
 
-        /**
-         * @todo Check dependency integrity failure - when one module is marked as dependent of other bot the other is
-         * not marked as a requirement of the one.
-         */
         if (this.requires[requirement] || requirement.dependants[this]) {
             throw lib.format("{1} already marked as requirement of {0}", this.name, requirement.name);
         }
@@ -431,14 +453,20 @@ ModuleCollection.analysers = [];
 
 // Functions to analyse the collection.
 ModuleCollection.analysers.push(function (stat) {
-    var module;
+    var module,
+        prop;
 
     stat.orphanModules = [];
     stat.definedModules = [];
+    stat.numberOfExports = 0;
 
-    for (var prop in this.modules) {
+    for (prop in this.modules) {
         module = this.modules[prop];
         stat[module.defined() ? "definedModules" : "orphanModules"].push(module);
+        stat.numberOfExports += module.targets && module.targets.length || 0;
+    }
+    for (prop in this.targets) {
+
     }
 });
 

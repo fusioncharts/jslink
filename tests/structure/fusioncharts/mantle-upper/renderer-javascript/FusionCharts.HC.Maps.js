@@ -3,4 +3,6 @@
  * @expects fusioncharts
  * @expects fusioncharts.renderer
  * @expects fusioncharts.renderer.javascript
+ *
+ * @export fusioncharts.maps.js
  */

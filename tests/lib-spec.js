@@ -1,5 +1,5 @@
 describe("library module", function () {
-    var lib = require("../develop/jslinker.lib.js");
+    var lib = require("../src/lib.js");
 
     it ("must have `plural` function", function () {
         expect(typeof lib.plural === "function").toBeTruthy();
