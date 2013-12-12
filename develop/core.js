@@ -92,14 +92,6 @@ module.exports = /** @lends module:jslinker */ {
                 console.warn(error);
             }
             else {
-                if (stat && stat.orphanModules.length) {
-                    cursor.red();
-                    console.log(lib.plural(stat.orphanModules.length, "orphan module") + " found.");
-                    i = stat.orphanModules.length;
-                    while (i--) {
-                        console.log(lib.format("- {0}", stat.orphanModules[i].name));
-                    }
-                }
                 cursor.green();
                 console.info(lib.format("{0}, {1} processed.", lib.plural(stat.filesProcessed || 0, "file"),
                     lib.plural(stat.definedModules.length || 0, "module")));
@@ -143,6 +135,10 @@ module.exports = /** @lends module:jslinker */ {
             }
 
             stat = collection.analyse();
+            if (options.strict && stat.orphanModules.length) {
+                throw lib.format("{0} detected under strict mode.\n- {1}", lib.plural(stat.orphanModules.length,
+                    "orphan module"), stat.orphanModules.join("\n- "));
+            }
 
             if (Array.isArray(options.output)) {
                 outputModules = {};
@@ -175,18 +171,19 @@ module.exports = /** @lends module:jslinker */ {
                     throw "Invalid output suggestion: " + options.output;
                 }
 
-                moduleIO.exportToFile(collection, outputModules, options.destination, !!options.overwrite);
+                moduleIO.exportToFile(collection, outputModules, options.destination, options.overwrite);
             }
             else {
-                moduleIO.exportToFile(collection, null, options.destination, !!options.overwrite);
+                moduleIO.exportToFile(collection, null, options.destination, options.overwrite);
             }
 
             if (options.exportmap) {
-                moduleIO.exportDependencyMap(collection, options.exportmap, !!options.overwrite);
+                moduleIO.exportDependencyMap(collection, options.exportmap, options.overwrite);
             }
         }
         catch (err) {
             error = err;
+            throw err;
         }
 
         /**

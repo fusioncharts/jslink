@@ -150,11 +150,15 @@ module.exports = {
     exportDependencyMap: function (collection, path, overwrite) {
         /** @todo refactor */
         // Get the final path to the export file.
-        path = lib.writeableFile(path, DEFAULT_DOT_FILENAME, overwrite);
+        path = lib.writeableFile(path, DEFAULT_DOT_FILENAME, overwrite, true);
 
         // Ensure that the output file is not one of the input files!
-        if (collection.sources[pathUtil.resolve(path)]) {
+        if (collection.sources[path]) {
             throw new Error("The dot output file path overwrites input files!");
+        }
+
+        if ((overwrite === false) && fs.existsSync(path)) {
+            throw new Error(lib.format("Cannot overwrite \"{0}\".", path));
         }
 
         return fs.writeFileSync(path, collection.toString());
@@ -174,7 +178,6 @@ module.exports = {
         if (!fs.statSync(destination).isDirectory()) {
             throw lib.format("Out put destination is not a directory: \"{0}\"", destination);
         }
-
 
         // Iterate on all set of connected module groups within the collection and create array of sourcefiles that
         // contain these modules.

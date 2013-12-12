@@ -236,7 +236,7 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
 
 
     toString: function () {
-        var out = "digraph jsLinker {",
+        var out = "digraph jsLinker {\n",
             module,
             dependant;
 
@@ -246,11 +246,11 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
             // In case there are no requirements, output the module as an isolated one.
             if (module.numberOfDependants) {
                 for (dependant in module.dependants) {
-                    out += lib.format("\"{0}\"->\"{1}\";", module, dependant);
+                    out += lib.format("\"{0}\"->\"{1}\";\n", module, dependant);
                 }
             }
             else {
-                out += "\"" + module.name + "\";";
+                out += "\"" + module.name + "\";\n";
             }
 
         }

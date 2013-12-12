@@ -6,7 +6,10 @@ var E = "",
     SPC = " ",
     PLURAL_SUFFIX = "s",
     STRING  = "string",
+    OBJECT = "object",
     FUNCTION = "function",
+    SLASH = "/",
+    DOTSLASH = "./",
 
     fs = require("fs"),
     pathUtil = require("path"),
@@ -162,7 +165,7 @@ module.exports = lib = /** @lends module:lib */ {
      */
     parseJSONBooleans: function (obj, booleans) {
         // Check whether parameters are valid
-        if ((typeof obj === "object") && Array.isArray(booleans) && booleans.length) {
+        if ((typeof obj === OBJECT) && Array.isArray(booleans) && booleans.length) {
             booleans.forEach(function (prop) {
                 if (obj.hasOwnProperty(prop)) {
                     obj[prop] = (/\s*true\s*/ig.test(obj[prop]));
@@ -173,81 +176,71 @@ module.exports = lib = /** @lends module:lib */ {
     },
 
     /**
-     * Takes in user provided path and returns a writeable path for the same.
+     * Procures a writeable file.
      *
      * @param {string} path
-     * @param {string} default
-     * @param {boolean=} [overwrite]
+     * @param {string} defaultPath
+     * @param {boolean} overwrite
+     * @param {boolean} nocreate
      * @returns {string}
      */
-    writeableFile: function (path, defaultPath , overwrite) { /** @todo refactor */
-        var stat,
-            dirlist,
+    writeableFile: function (path, defaultPath, overwrite, nocreate) {
+
+        var originalPath = path, // store it for future references.
             dir;
 
-        // Check for hidden or invalid path
-        if (!path) {
+        // In case path comes from cli input and is equal to boolean true, then proceed with default.
+        if (path === true) {
+            originalPath = path = defaultPath;
+        }
+
+        // Validate parameters so as to ensure that the path and the alternative defaults can be processed.
+        if (!path || !defaultPath) {
             throw new TypeError("Path cannot be blank.");
         }
-
-        if (lib.isUnixHiddenPath(path)) {
-            throw new TypeError("Cannot output to hidden file path.");
+        else if (lib.isUnixDirectory(path)) {
+            throw new TypeError(lib.format("Path \"{0}\" cannot be a directory."), path)
+        }
+        else if (lib.isUnixHiddenPath(path)) {
+            throw new TypeError(lib.format("Cannot output to hidden file \"{0}\"."), path);
+        }
+        else if (lib.isUnixDirectory(defaultPath)) {
+            throw new TypeError("Path (default) cannot be a directory.");
         }
 
-        // In case path comes from cli inout and is equak to boolean true, then return default
-        if (path === true) {
-            path = defaultPath;
+        // In case the output path is a directory, use the filename from default path.
+        if (lib.isUnixDirectory(path)) {
+            path += pathUtil.basename(defaultPath); // add file name if path is a directory
         }
-
-        // Validate the default path
-        if (lib.isUnixDirectory(defaultPath)) {
-            throw new TypeError("Default path cannot be a directory.");
-        }
-
-        path = pathUtil.resolve(path.toString());
+        // Resolve the path to absolute reference (append ./ to prevent non-relative specs)
+        path = pathUtil.resolve(pathUtil.join(DOTSLASH, path.toString()));
 
         // If the path provided exists, the only check should be that it is a file and a not a directory. If its a
         // directory, then append default file name;
         if (fs.existsSync(path)) {
-            stat = fs.statSync(path);
-
-            if (stat.isDirectory()) {
-                path += pathUtil.basename(defaultPath);
-            }
-            else if (stat.isFile()) {
+            // In case the final file does point to an existing file, we need to check whether overwriting is permitted
+            // or not.
+            if (fs.statSync(path).isFile()) {
                 if (overwrite === false) {
-                    throw new Error(lib.format("Cannot overwrite \"{0}\"", pathUtil.basename(path)));
+                    throw new Error(lib.format("Cannot overwrite \"{0}\"", originalPath));
                 }
             }
+            // Otherwise... it is either a directory or the world's end!
             else {
-                throw new TypeError("The output path does not point to a file.");
+                throw new TypeError(lib.format("The output path \"{0}\" does not point to a file.", originalPath));
             }
         }
-        // If file does not exist then we climb up the directory tree and recover the tree of folders that needs to be
-        // created.
+        // When file does not exist then we would need to create the directory tree (if provided and allowed)
         else {
-
-            dirlist = [];
-            if (lib.isUnixDirectory(path)) {
-                dir = path;
-                path += pathUtil.basename(defaultPath); // add file name if path is a directory
-            }
-            else {
-                dir = pathUtil.dirname(path);
-            }
-
-            // Extract directories within the path that does not exist.
-            while (!fs.existsSync(dir) && (dir !== "/")) {
-                dirlist.push(dir);
-                dir = pathUtil.dirname(dir);
-            }
-            // We now slowly create the directories recovered from the above loop.
-            while (dir = dirlist.pop()) {
-                fs.mkdirSync(dir); // let any error bubble.
+            // Ensure that the path has a writeable folder (if permitted) till its parent directory.
+            lib.writeableFolder(pathUtil.dirname(path), defaultPath);
+            // We create the file so that it can be further used to write or append.
+            if (!nocreate) {
+                fs.openSync(path, "w");
             }
         }
 
-        return path;
+        return path; // the valid path
     },
 
     /**
@@ -255,60 +248,57 @@ module.exports = lib = /** @lends module:lib */ {
      *
      * @param {string} path
      * @param {string} default
-     * @param {boolean=} [overwrite]
      * @returns {string}
      */
-    writeableFolder: function (path, defaultPath , overwrite) { /** @todo refactor */
-        var stat,
+    writeableFolder: function (path, defaultPath) {
+        var originalPath = path,
             dirlist,
             dir;
 
-        // Check for hidden or invalid path
-        // // In case path comes from cli inout and is equak to boolean true, then return default
-        if (!path || path === true) {
+        // In case path comes from cli input and is equal to boolean true, then proceed with default.
+        if (path === true) {
             path = defaultPath;
         }
 
-        if (lib.isUnixHiddenPath(path)) {
-            throw new TypeError(lib.format("The path \"{0}\" points to a hidden file.", path));
+        // Validate parameters so as to ensure that the path and the alternative defaults can be processed.
+        if (!defaultPath) {
+            throw new TypeError("Path cannot be blank.");
+        }
+        else if (!path) {
+            path = defaultPath;
         }
 
-        // Validate the default path and the required path to at least theoretically point to directories.
-        if (!lib.isUnixDirectory(defaultPath)) {
-            throw new TypeError(lib.format("Path \"{0}\" cannot point to a file.", defaultPath));
-        }
         if (!lib.isUnixDirectory(path)) {
-            throw new TypeError(lib.format("Path \"{0}\" cannot point to a file.", path));
+            throw new TypeError(lib.format("Path \"{0}\" cannot be a file."), path)
+        }
+        else if (lib.isUnixHiddenPath(path)) {
+            throw new TypeError(lib.format("Cannot output to hidden file \"{0}\"."), path);
+        }
+        else if (!lib.isUnixDirectory(defaultPath)) {
+            throw new TypeError("Path (default) cannot be a file.");
         }
 
-        path = pathUtil.resolve(path.toString());
+        path = pathUtil.resolve(pathUtil.join(DOTSLASH, path.toString()));
 
-        // In case output exusts, we check whether it is a folder
-        if (fs.existsSync(path)) {
-            stat = fs.statSync(path);
+        dirlist = [];
+        dir = path;
 
-            if (!stat.isDirectory()) {
-                throw new TypeError(lib.format("The output path \"{0}\" does not point to a directory."), path);
+        // Extract directories within the path that does not exist.
+        while (dir !== SLASH) {
+            if (fs.existsSync(dir)) {
+                // Check whether the last existing member of the dir tree is not a file.
+                if (!fs.statSync(dir).isDirectory()) {
+                    throw new Error(lib.format("Cannot write to \"{0}\" since \"{1}\" is not a directory.",
+                        originalPath, dir));
+                }
+                break;
             }
-            else if (overwrite === false) {
-                throw new Error(lib.format("Cannot overwrite \"{0}\"", pathUtil.basename(path)));
-            }
+            dirlist.push(dir);
+            dir = pathUtil.dirname(dir);
         }
-        // If file does not exist then we climb up the directory tree and recover the tree of folders that needs to be
-        // created.
-        else {
-            dirlist = [];
-            dir = path;
-
-            // Extract directories within the path that does not exist.
-            while (!fs.existsSync(dir) && (dir !== "/")) {
-                dirlist.push(dir);
-                dir = pathUtil.dirname(dir);
-            }
-            // We now slowly create the directories recovered from the above loop.
-            while (dir = dirlist.pop()) {
-                fs.mkdirSync(dir); // let any error bubble.
-            }
+        // We now slowly create the directories recovered from the above loop.
+        while (dir = dirlist.pop()) {
+            fs.mkdirSync(dir); // let any error bubble.
         }
 
         return path;

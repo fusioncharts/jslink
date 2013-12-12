@@ -18,6 +18,7 @@ Commandline Options
 - `--includePattern=RegularExpression`
 - `--excludePattern=ReqularExpression`
 - `--version`
+- `--conf=filename`
 
 
 See development in action
@@ -54,3 +55,7 @@ Sorted Output:
 ]
 11 files, 11 modules processed.
 ```
+
+Technical Notes
+- Whenever any option asks you to provide a directory, if you are not providing `.` or `..`, ensure that you end the
+  path with a `/`
