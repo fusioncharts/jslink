@@ -4,4 +4,6 @@
  * @requires init
  * @requires cleanup
  * @requires printf
+ *
+ * @export main.js
  */

@@ -27,12 +27,13 @@ module.exports = /** @lends module:jslinker */ {
         recursive: false,
         includePattern: /.+\.js$/,
         excludePattern: /^$/,
-        destination: "./",
+        destination: "./out/",
         strict: true,
         exportmap: false,
         overwrite: false,
         verbose: false,
-        help: false
+        help: false,
+        test: false
     },
 
     /**
@@ -48,7 +49,8 @@ module.exports = /** @lends module:jslinker */ {
             options = lib.fill(options, lib.readJSONFromFile(options.conf));
         }
         options = lib.fill(options, module.exports.options);
-        options = lib.parseJSONBooleans(options, ["recursive", "exportmap", "overwrite", "strict", "verbose", "help"]);
+        options = lib.parseJSONBooleans(options, ["recursive", "exportmap", "overwrite", "strict", "verbose", "help",
+            "test"]);
 
         // If version query is sent then ignore all other options
         if (options.version) {
@@ -84,8 +86,6 @@ module.exports = /** @lends module:jslinker */ {
         });
 
         return this.parse(options, function (error, collection, stat) { // callback for output to console
-            var i;
-
             cursor.reset();
             if (error || !collection) {
                 cursor.red();
@@ -93,8 +93,9 @@ module.exports = /** @lends module:jslinker */ {
             }
             else {
                 cursor.green();
-                console.info(lib.format("{0}, {1} processed.", lib.plural(stat.filesProcessed || 0, "file"),
-                    lib.plural(stat.definedModules.length || 0, "module")));
+                console.info(lib.format("{0}, {1} processed for {2}.", lib.plural(stat.filesProcessed || 0, "file"),
+                    lib.plural(stat.definedModules.length || 0, "module"),
+                    lib.plural(stat.numberOfExports || 0, "export directive")));
 
             }
             console.timeEnd("Preprocessing time");
@@ -109,10 +110,8 @@ module.exports = /** @lends module:jslinker */ {
      */
     parse: function (options, callback) { /** @todo refactor */
         var collection = new ModuleCollection(),
-            token,
             error, // to pass on from try-catch to callback.
             stat,
-            outputModules,
             i,
             ii;
 
@@ -124,8 +123,8 @@ module.exports = /** @lends module:jslinker */ {
             for (i = 0, ii = options.source.length; i < ii; i++) {
                 if (options.source[i]) {
                     // Load the module dependencies from file.
-                    moduleIO.loadFromFile(collection, options.source[i], Boolean(options.recursive), options.includePattern,
-                        options.excludePattern);
+                    moduleIO.populateCollectionFromFS(collection, options.source[i], Boolean(options.recursive),
+                        options.includePattern, options.excludePattern);
                 }
             }
 
@@ -140,45 +139,13 @@ module.exports = /** @lends module:jslinker */ {
                     "orphan module"), stat.orphanModules.join("\n- "));
             }
 
-            if (Array.isArray(options.output)) {
-                outputModules = {};
-                for (i = 0, ii = options.output.length; i < ii; i++) {
-                    if (options.output[i] && options.output[i].split && (token = options.output[i].split(":")).length) {
-                        if (token[0]) {
-                            token[0] = token[0].replace(/\\\:/g, ":");
-                            outputModules[token[0]] = token[1] && token[1].toString && token[1].toString() || true;
-                        }
-                        else {
-                            throw "Invalid output suggestion: " + options.output[i];
-                        }
-                    }
-                }
-
-                if (!Object.keys(outputModules).length) {
-                    moduleIO.exportToFile(collection, null, options.destination, !!options.overwrite);
-                }
-                moduleIO.exportToFile(collection, outputModules, options.destination, !!options.overwrite);
-
-            }
-            else if (options.output && options.output.split) {
-                token = options.output.split(":");
-                if (token[0]) {
-                    token[0] = token[0].replace(/\\\:/g, ":");
-                    outputModules = {};
-                    outputModules[token[0]] = token[1] && token[1].toString && token[1].toString() || true;
-                }
-                else {
-                    throw "Invalid output suggestion: " + options.output;
-                }
-
-                moduleIO.exportToFile(collection, outputModules, options.destination, options.overwrite);
-            }
-            else {
-                moduleIO.exportToFile(collection, null, options.destination, options.overwrite);
-            }
-
             if (options.exportmap) {
-                moduleIO.exportDependencyMap(collection, options.exportmap, options.overwrite);
+                moduleIO.writeCollectionToDot(collection, options.exportmap, options.overwrite);
+            }
+
+            // Export files unless test flag is true.
+            if (!options.test) {
+                moduleIO.exportCollectionToFS(collection, options.destination, options.overwrite, options.strict);
             }
         }
         catch (err) {

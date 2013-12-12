@@ -14,8 +14,9 @@ var E = "",
     DEFAULT_EXCLUDE_PATTERN = /^$/,
     DEFAULT_DEFINE_TAG_PATTERN = /\@module\s*([^\@\r\n]*)/ig,
     DEFAULT_INCLUDE_TAG_PATTERN = /\@requires\s*([^\@\r\n]*)/ig,
+    DEFAULT_EXPORT_TAG_PATTERN = /\@export\s*([^\@\r\n]*)/ig,
     DEFAULT_DOT_FILENAME = "./jslinker.dot",
-    DEFAULT_OUT_DESTINATION = "./", /** @todo finalise default */
+    DEFAULT_OUT_DESTINATION = "./out/",
 
     fs = require("fs"),
     pathUtil = require("path"),
@@ -25,18 +26,19 @@ var E = "",
 
     ModuleCollection = require("./collection.js");
 
-/**
- * Function to add file parsing statistics to collection.
- */
-ModuleCollection.analysers.push(function (stat) {
-    // All the work for these stats were picked up during execution of loadFromFile function
-    stat.filesTotal = this._statFilesTotal;
-    stat.filesProcessed = this._statFilesProcessed;
-    stat.filesIgnored = this._statFilesTotal - this._statFilesProcessed - this._statFilesError;
-});
-
 module.exports = {
-    loadFromFile: function (collection, path, recurse, include, exclude) {
+    /**
+     * This function takes in a {@link module:collection~ModuleCollection} and populates it with module dependency tree
+     * as loaded from files on the filesystem.
+     *
+     * @param {module:collection~ModuleCollection} collection
+     * @param {string} path
+     * @param {boolean=} [recurse]
+     * @param {RegExp=|string=} [include]
+     * @param {RegExp=|string=} [exclude]
+     * @returns {module:collection~ModuleCollection}
+     */
+    populateCollectionFromFS: function (collection, path, recurse, include, exclude) {
         var esprimaOptions = { // we define it outside to avoid redefinition in loop.
                 comment: true
             };
@@ -60,9 +62,10 @@ module.exports = {
             var fileName,
                 comments,
                 comment,
-                moduleName, // to control parsing flow when module is discovered in a block
+                module, // to control parsing flow when module is discovered in a block
                 moduleAdder, // function
                 dependencyAdder, // function
+                exportAdder, // function
                 i,
                 ii;
             // Increment counter of total file processing.
@@ -100,13 +103,13 @@ module.exports = {
                 if ($1 && ($1 = $1.trim())) {
                     // In case token has been already been defined, we know that it is a repeated module definition
                     // and warn the same.
-                    if (moduleName) {
+                    if (module) {
                         throw lib.format("Repeated module definition encountered in single block. " +
-                            "{0} dropped in favour of {1} in {2}", $1, moduleName, fileName);
+                            "{0} dropped in favour of {1} in {2}", $1, module, fileName);
                     }
                     // Only accept the first definition
-                    collection.add($1, path);
-                    moduleName = $1; // store the module name for subsequent use within this loop.
+                    // store the module name for subsequent use within this loop.
+                    module = collection.add($1, path);
                 }
             };
 
@@ -115,14 +118,23 @@ module.exports = {
             dependencyAdder = function ($glob, $1) {
                 // Extract the value of the token.
                 if ($1 && ($1 = $1.trim())) {
-                    collection.connect(moduleName, $1);
+                    collection.connect(module, $1);
+                }
+            };
+
+            // This function searches whether the module definition has any export directive. This is defined here to
+            // avoid repeated definition within loop.
+            exportAdder = function ($glob, $1) {
+                // Extract the value from token.
+                if ($1 && ($1 = $1.trim())) {
+                    module.addTarget($1);
                 }
             };
 
             // Loop through the comments and process the "Block" types.
             for (i = 0, ii = comments.length; i < ii; i++) {
                 comment = comments[i];
-                moduleName = E; // reset lock for parsing modules
+                module = undefined; // reset lock for parsing modules
 
                 // Only continue if its a block comment and starts with jsdoc syntax. Also prevet blocks having @ignore
                 // tags from being parsed.
@@ -133,8 +145,11 @@ module.exports = {
                 // Search for a module definition in it.
                 comment.value.replace(DEFAULT_DEFINE_TAG_PATTERN, moduleAdder);
                 // We need to search for dependencies only if a module name has been discovered.
-                if (moduleName) {
+                if (module) {
+                    // Add @requires
                     comment.value.replace(DEFAULT_INCLUDE_TAG_PATTERN, dependencyAdder);
+                    // Add @export
+                    comment.value.replace(DEFAULT_EXPORT_TAG_PATTERN, exportAdder);
                 }
             }
 
@@ -147,8 +162,81 @@ module.exports = {
         return collection;
     },
 
-    exportDependencyMap: function (collection, path, overwrite) {
-        /** @todo refactor */
+    exportCollectionToFS: function (collection, destination, overwrite) {
+        var serialized = collection.serialize(),
+            bundles = [],
+            createTarget, // function
+            appendSource; // function
+
+        // Validate the destination directory.
+        destination = lib.writeableFolder(destination, DEFAULT_OUT_DESTINATION);
+        if (!fs.statSync(destination).isDirectory()) {
+            throw lib.format("Output destination is not a directory: \"{0}\"", destination);
+        }
+
+        // Iterate on all set of connected module groups within the collection and create array of sourcefiles that
+        // contain these modules.
+        serialized.forEach(function (modules) {
+            var stack = [],
+                targets = [],
+                added = {}, // use this to check whether a source was already pushed in stack.
+                module,
+                i;
+
+            // Least likely, but module can end up having all disconnected empty subgraphs... don't know when though!
+            if (!modules.length) {
+                return;
+            }
+
+            i = modules.length;
+            while (i--) {
+                module = modules[i];
+                // We would not add the same source twice and hence check the hash.
+                if (added[module.source]) {
+                    break;
+                }
+                // Add to flag even if it is not defines, so that repeated checks are not needed.
+                added[module.source] = true;
+                // Add the module to export stack provided its source has been defined.
+                if (module.defined()) {
+                    stack.unshift(module.source); // add it to stack
+                    // We check if this module has any export directives and if so, add it for later.
+                    module.targets && (targets = targets.concat(module.targets));
+                }
+            }
+            bundles.push({
+                sources: stack,
+                targets: targets
+            });
+        });
+
+        // Adds the content of source file to target file.
+        appendSource = function (sourceFileName) {
+            fs.appendFileSync(this[0], fs.readFileSync(sourceFileName));
+        };
+
+        // Create or empty the file name from the bunch of targets.
+        createTarget = function (targetFileName) {
+            targetFileName = pathUtil.join(destination, targetFileName); // append destination to file name
+            lib.writeableFile(true, targetFileName, overwrite, false, true);
+            this.forEach(appendSource, [targetFileName]);
+        };
+
+        bundles.forEach(function (bundle) {
+            // Create and append files separately to reduce spatial complexity.
+            bundle.targets.forEach(createTarget, bundle.sources);
+        });
+    },
+
+    /**
+     * Export the dependency map of a collection as a graphViz `dot` file.
+     *
+     * @param {module:collection~ModuleCollection} collection
+     * @param {string} path
+     * @param {boolean=} [overwrite]
+     * @returns {module:collection~ModuleCollection}
+     */
+    writeCollectionToDot: function (collection, path, overwrite) {
         // Get the final path to the export file.
         path = lib.writeableFile(path, DEFAULT_DOT_FILENAME, overwrite, true);
 
@@ -157,95 +245,23 @@ module.exports = {
             throw new Error("The dot output file path overwrites input files!");
         }
 
+        // In case overwriting is disabled, we check whether the dot file already exists or not.
         if ((overwrite === false) && fs.existsSync(path)) {
             throw new Error(lib.format("Cannot overwrite \"{0}\".", path));
         }
 
-        return fs.writeFileSync(path, collection.toString());
-    },
-
-    exportToFile: function (collection, suggestedModules, destination, overwrite) {
-        /** @todo refactor */
-        var serialized = collection.serialize(suggestedModules && Object.keys(suggestedModules)), // get the sorted and serialised set of modules.
-            bundles = [],
-            appendSource; // function to avoid redefinition in loop
-
-        // Validate and sanitize suggested modules and paths.
-        if (!suggestedModules) {
-            suggestedModules = {};
-        }
-        destination = lib.writeableFolder(destination, DEFAULT_OUT_DESTINATION);
-        if (!fs.statSync(destination).isDirectory()) {
-            throw lib.format("Out put destination is not a directory: \"{0}\"", destination);
-        }
-
-        // Iterate on all set of connected module groups within the collection and create array of sourcefiles that
-        // contain these modules.
-        serialized.forEach(function (modules) {
-            var stack = [],
-                sources = {}, // use this to check whether a source was already pushed in stack.
-                suggested,
-                item,
-                i;
-
-            if (!modules.length) {
-                return;
-            }
-
-            i = modules.length;
-            while (i--) {
-                if (sources[modules[i].source]) {
-                    break;
-                }
-                stack.unshift(modules[i].source);
-                sources[modules[i].source] = true; // add to flag
-            }
-
-            suggested = false;
-            for (item in suggestedModules) {
-                suggested = collection.get(item);
-                if ((i = modules.indexOf(suggested)) === -1) {
-                    continue;
-                }
-                if (suggestedModules[item] === true || !suggestedModules[item]) {
-                    suggestedModules[item] = pathUtil.basename(modules[i].source);
-                }
-                else {
-                    suggestedModules[item] = suggestedModules[item];
-                }
-
-                if (/^[^\/].*/.test(suggestedModules[item])) {
-                    suggestedModules[item] = pathUtil.join(destination, suggestedModules[item]);
-                }
-
-                bundles.push({
-                    sources: stack,
-                    output: pathUtil.resolve(suggestedModules[item])
-                });
-                delete suggestedModules[item];
-            }
-
-            if (!suggested) {
-                bundles[modules[modules.length - 1].name] = {
-                    sources: stack,
-                    output: pathUtil.resolve(pathUtil.join(destination, pathUtil.basename(modules[modules.length - 1].source) ))
-                };
-            }
-
-        });
-
-        appendSource = function (sourceFileName) {
-            fs.appendFileSync(prop.output, fs.readFileSync(sourceFileName));
-        };
-
-        for (var prop in bundles) {
-            prop = bundles[prop];
-            if (fs.existsSync(prop.output) && overwrite === false) {
-                throw "Cannot overwrite " + prop.output;
-            }
-
-            fs.openSync(prop.output, "w");
-            prop.sources.forEach(appendSource);
-        }
+        // Thankfully, the dot file is generated by the collection's toString method itself.
+        fs.writeFileSync(path, collection.toString());
+        return collection;
     }
 };
+
+/**
+ * Function to add file parsing statistics to collection.
+ */
+ModuleCollection.analysers.push(function (stat) {
+    // All the work for these stats were picked up during execution of loadFromFile function
+    stat.filesTotal = this._statFilesTotal;
+    stat.filesProcessed = this._statFilesProcessed;
+    stat.filesIgnored = this._statFilesTotal - this._statFilesProcessed - this._statFilesError;
+});

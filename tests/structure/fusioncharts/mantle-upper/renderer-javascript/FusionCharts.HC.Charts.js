@@ -5,4 +5,6 @@
  * @expects fusioncharts.renderer.javascript
  *
  * @requires fusioncharts.renderer.javascript.charts.zoomline
+ *
+ * @export fusioncharts.charts.js
  */

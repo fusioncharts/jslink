@@ -192,25 +192,13 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
     /**
      * Serialises the modules using topological sorting mechanism and returns an array of arrays containing all modules
      * in the sorted order.
-     * @param {string|module:collection~ModuleCollection.Module=} [considerModules]
      * @returns {Array<Array>}
      */
-    serialize: function (considerModules) {
+    serialize: function () {
         var sortStack = [], // array to hold all the sorted modules.
             adjacencyPoint = 0,
             modules = this.modules,
             module;
-
-        // Create a common object based on whether root module is provided.
-        if (considerModules && considerModules.length) {
-            modules = {};
-            (Array.isArray(considerModules) ? considerModules : [considerModules]).forEach(function (moduleName) {
-                modules[moduleName] = this.get(moduleName);
-                if (!modules[moduleName]) {
-                    throw new Error(lib.format("Module \"{0}\" is not defined.", moduleName));
-                }
-            }, this);
-        }
 
         // Iterate over all modules, index them and run topological sort. Indexing will always go faster than sorting
         // since index happens on both ingress and egress edges at the same time, as such 2x the cycle of sorting.
@@ -358,6 +346,12 @@ ModuleCollection.Module = function (name, source) {
     this.numberOfDependants = 0;
 
     /**
+     * Export directives
+     * @property {Object<Array>} [targets]
+     */
+    // this.targets = []; // available after addTarget()
+
+    /**
      * The source file path that defines this module. This is to be used as a getter and should be set using the
      * {@link module:collection~ModuleCollection.Module#define} method.
      * @type {string}
@@ -385,6 +379,25 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
         }
         this.source = lib.stringLike(source); // store
         return this; // chain
+    },
+
+    /**
+     * Add the list of target modules marked for export.
+     * @param {module:collection~ModuleCollection.Module} module
+     * @param {string} meta
+     */
+    addTarget: function (meta) {
+        // If export meta is not defined then we treat the module name as meta.
+        if (!meta) {
+            meta = this.name;
+        }
+        // We add the meta information unless there is a duplicate. At least the same module should not have two same
+        // export meta!
+        if ((this.targets || (this.targets = [])).indexOf(meta) === -1) {
+            this.targets.push(meta);
+        }
+
+        return module;
     },
 
     /**
@@ -440,14 +453,20 @@ ModuleCollection.analysers = [];
 
 // Functions to analyse the collection.
 ModuleCollection.analysers.push(function (stat) {
-    var module;
+    var module,
+        prop;
 
     stat.orphanModules = [];
     stat.definedModules = [];
+    stat.numberOfExports = 0;
 
-    for (var prop in this.modules) {
+    for (prop in this.modules) {
         module = this.modules[prop];
         stat[module.defined() ? "definedModules" : "orphanModules"].push(module);
+        stat.numberOfExports += module.targets && module.targets.length || 0;
+    }
+    for (prop in this.targets) {
+
     }
 });
 

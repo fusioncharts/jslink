@@ -148,7 +148,7 @@ module.exports = lib = /** @lends module:lib */ {
      */
     readJSONFromFile: function (path) {
         try {
-            path = "./" + path;
+            path = DOTSLASH + path;
             return JSON.parse(fs.readFileSync(path));
         }
         catch (error) {
@@ -180,14 +180,14 @@ module.exports = lib = /** @lends module:lib */ {
      *
      * @param {string} path
      * @param {string} defaultPath
-     * @param {boolean} overwrite
-     * @param {boolean} nocreate
+     * @param {boolean=} [overwrite]
+     * @param {boolean=} [nocreate]
+     * @param {boolean=} [clear]
      * @returns {string}
      */
-    writeableFile: function (path, defaultPath, overwrite, nocreate) {
+    writeableFile: function (path, defaultPath, overwrite, nocreate, clear) {
 
-        var originalPath = path, // store it for future references.
-            dir;
+        var originalPath = path; // store it for future references.
 
         // In case path comes from cli input and is equal to boolean true, then proceed with default.
         if (path === true) {
@@ -199,7 +199,7 @@ module.exports = lib = /** @lends module:lib */ {
             throw new TypeError("Path cannot be blank.");
         }
         else if (lib.isUnixDirectory(path)) {
-            throw new TypeError(lib.format("Path \"{0}\" cannot be a directory."), path)
+            throw new TypeError(lib.format("Path \"{0}\" cannot be a directory."), path);
         }
         else if (lib.isUnixHiddenPath(path)) {
             throw new TypeError(lib.format("Cannot output to hidden file \"{0}\"."), path);
@@ -212,8 +212,8 @@ module.exports = lib = /** @lends module:lib */ {
         if (lib.isUnixDirectory(path)) {
             path += pathUtil.basename(defaultPath); // add file name if path is a directory
         }
-        // Resolve the path to absolute reference (append ./ to prevent non-relative specs)
-        path = pathUtil.resolve(pathUtil.join(DOTSLASH, path.toString()));
+        // Resolve the path to absolute reference
+        path = pathUtil.resolve(path.toString());
 
         // If the path provided exists, the only check should be that it is a file and a not a directory. If its a
         // directory, then append default file name;
@@ -224,6 +224,9 @@ module.exports = lib = /** @lends module:lib */ {
                 if (overwrite === false) {
                     throw new Error(lib.format("Cannot overwrite \"{0}\"", originalPath));
                 }
+                else if (clear) {
+                    fs.writeFileSync(path, E);
+                }
             }
             // Otherwise... it is either a directory or the world's end!
             else {
@@ -233,10 +236,10 @@ module.exports = lib = /** @lends module:lib */ {
         // When file does not exist then we would need to create the directory tree (if provided and allowed)
         else {
             // Ensure that the path has a writeable folder (if permitted) till its parent directory.
-            lib.writeableFolder(pathUtil.dirname(path), defaultPath);
+            lib.writeableFolder(pathUtil.dirname(path) + SLASH, pathUtil.dirname(defaultPath) + SLASH);
             // We create the file so that it can be further used to write or append.
             if (!nocreate) {
-                fs.openSync(path, "w");
+                clear === true ? fs.writeFileSync(path, E) : fs.openSync(path, "w");
             }
         }
 
@@ -269,7 +272,7 @@ module.exports = lib = /** @lends module:lib */ {
         }
 
         if (!lib.isUnixDirectory(path)) {
-            throw new TypeError(lib.format("Path \"{0}\" cannot be a file."), path)
+            throw new TypeError(lib.format("Path \"{0}\" cannot be a file."), path);
         }
         else if (lib.isUnixHiddenPath(path)) {
             throw new TypeError(lib.format("Cannot output to hidden file \"{0}\"."), path);
@@ -278,7 +281,7 @@ module.exports = lib = /** @lends module:lib */ {
             throw new TypeError("Path (default) cannot be a file.");
         }
 
-        path = pathUtil.resolve(pathUtil.join(DOTSLASH, path.toString()));
+        path = pathUtil.resolve(path.toString());
 
         dirlist = [];
         dir = path;
@@ -301,6 +304,6 @@ module.exports = lib = /** @lends module:lib */ {
             fs.mkdirSync(dir); // let any error bubble.
         }
 
-        return path;
+        return (/\/$/).test(path) ? path : path + SLASH;
     }
 };
