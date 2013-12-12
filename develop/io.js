@@ -164,8 +164,7 @@ module.exports = {
         /** @todo refactor */
         var serialized = collection.serialize(suggestedModules && Object.keys(suggestedModules)), // get the sorted and serialised set of modules.
             bundles = [],
-            suggestedModuleKeys,
-            item;
+            appendSource; // function to avoid redefinition in loop
 
         // Validate and sanitize suggested modules and paths.
         if (!suggestedModules) {
@@ -183,6 +182,7 @@ module.exports = {
             var stack = [],
                 sources = {}, // use this to check whether a source was already pushed in stack.
                 suggested,
+                item,
                 i;
 
             if (!modules.length) {
@@ -225,23 +225,24 @@ module.exports = {
             if (!suggested) {
                 bundles[modules[modules.length - 1].name] = {
                     sources: stack,
-                    output: pathUtil.resolve(pathUtil.join(DEFAULT_OUT_DESTINATION, pathUtil.basename(modules[modules.length - 1].source) ))
+                    output: pathUtil.resolve(pathUtil.join(destination, pathUtil.basename(modules[modules.length - 1].source) ))
                 };
             }
 
         });
 
-        for (var bundle in bundles) {
-            bundle = bundles[bundle];
+        appendSource = function (sourceFileName) {
+            fs.appendFileSync(prop.output, fs.readFileSync(sourceFileName));
+        };
 
-            if (fs.existsSync(bundle.output) && overwrite === false) {
-                throw "Cannot overwrite " + bundle.output;
+        for (var prop in bundles) {
+            prop = bundles[prop];
+            if (fs.existsSync(prop.output) && overwrite === false) {
+                throw "Cannot overwrite " + prop.output;
             }
 
-            fs.openSync(bundle.output, 'w');
-            bundle.sources.forEach(function (sourceFileName) {
-                fs.appendFileSync(bundle.output, fs.readFileSync(sourceFileName));
-            });
+            fs.openSync(prop.output, "w");
+            prop.sources.forEach(appendSource);
         }
     }
 };

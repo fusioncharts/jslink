@@ -23,7 +23,7 @@ collectionTopoSort = function (module, sortStack) {
 
     if (module.topologicalMarker) {
         delete module.topologicalMarker;
-        throw "Cyclic dependency error discovered in module: " + module.name;
+        throw "Cyclic dependency error discovered while parsing: " + module.name;
     }
 
     if (!module.sorting) {
@@ -236,7 +236,7 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
 
 
     toString: function () {
-        var out = "digraph G {",
+        var out = "digraph jsLinker {",
             module,
             dependant;
 

@@ -5,3 +5,4 @@ node_modules
 !*.sublime-project
 
 /jslinker.dot
+/out

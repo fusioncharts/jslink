@@ -138,7 +138,43 @@ module.exports = lib = /** @lends module:lib */ {
     },
 
     /**
+     * Return the JSON data stored in a file.
+     *
+     * @param {string} path Is always relative
+     * @returns {object}
+     */
+    readJSONFromFile: function (path) {
+        try {
+            path = "./" + path;
+            return JSON.parse(fs.readFileSync(path));
+        }
+        catch (error) {
+            throw new Error(lib.format("Unable to read file: {0}\n{1}", path, error));
+        }
+    },
+
+    /**
+     * Iterate over an object and convert all string booleans into native boolean values.
+     *
+     * @param {object} obj
+     * @param {Array} booleans
+     * @returns {object}
+     */
+    parseJSONBooleans: function (obj, booleans) {
+        // Check whether parameters are valid
+        if ((typeof obj === "object") && Array.isArray(booleans) && booleans.length) {
+            booleans.forEach(function (prop) {
+                if (obj.hasOwnProperty(prop)) {
+                    obj[prop] = (/\s*true\s*/ig.test(obj[prop]));
+                }
+            });
+        }
+        return obj;
+    },
+
+    /**
      * Takes in user provided path and returns a writeable path for the same.
+     *
      * @param {string} path
      * @param {string} default
      * @param {boolean=} [overwrite]
@@ -216,6 +252,7 @@ module.exports = lib = /** @lends module:lib */ {
 
     /**
      * Takes in user provided path and returns a writeable path for the same.
+     *
      * @param {string} path
      * @param {string} default
      * @param {boolean=} [overwrite]
@@ -233,15 +270,15 @@ module.exports = lib = /** @lends module:lib */ {
         }
 
         if (lib.isUnixHiddenPath(path)) {
-            throw new TypeError("Cannot output to hidden file path.");
+            throw new TypeError(lib.format("The path \"{0}\" points to a hidden file.", path));
         }
 
         // Validate the default path and the required path to at least theoretically point to directories.
         if (!lib.isUnixDirectory(defaultPath)) {
-            throw new TypeError("Default path cannot point to a file.");
+            throw new TypeError(lib.format("Path \"{0}\" cannot point to a file.", defaultPath));
         }
         if (!lib.isUnixDirectory(path)) {
-            throw new TypeError("Path cannot point to a file.");
+            throw new TypeError(lib.format("Path \"{0}\" cannot point to a file.", path));
         }
 
         path = pathUtil.resolve(path.toString());
@@ -251,7 +288,7 @@ module.exports = lib = /** @lends module:lib */ {
             stat = fs.statSync(path);
 
             if (!stat.isDirectory()) {
-                throw new TypeError("The output path does not point to a directory.");
+                throw new TypeError(lib.format("The output path \"{0}\" does not point to a directory."), path);
             }
             else if (overwrite === false) {
                 throw new Error(lib.format("Cannot overwrite \"{0}\"", pathUtil.basename(path)));
