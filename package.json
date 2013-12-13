@@ -36,12 +36,9 @@
     "test": "jshint ./src/"
   },
 
-  "preferGlobal": true,
-
-  "bin": {
-    "jslink": "./src/jslink"
-  },
-
+  "preferGlobal": false,
+  "bin": "./src/jslink",
+  "main": "./src/core.js",
   "man": ["./src/man/jslink.1"],
 
   "jshintConfig": {
