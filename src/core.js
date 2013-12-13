@@ -143,10 +143,13 @@ module.exports = /** @lends module:jslink */ {
                 moduleIO.writeCollectionToDot(collection, options.exportmap, options.overwrite);
             }
 
-            // Export files unless test flag is true.
-            if (!options.test) {
-                moduleIO.exportCollectionToFS(collection, options.destination, options.overwrite, options.strict);
+            // If the test flag is set to true, we do not initiate export of the files. Though we need to calculate
+            // dependency in order to show results of cyclic errors
+            if (options.test) {
+                cursor.write ("Running in test mode.\n");
             }
+            moduleIO.exportCollectionToFS(collection, options.destination, options.overwrite, options.strict,
+                options.test);
         }
         catch (err) {
             error = err;

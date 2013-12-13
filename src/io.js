@@ -162,17 +162,11 @@ module.exports = {
         return collection;
     },
 
-    exportCollectionToFS: function (collection, destination, overwrite) {
+    exportCollectionToFS: function (collection, destination, overwrite, testMode) {
         var serialized = collection.serialize(),
             bundles = [],
             createTarget, // function
             appendSource; // function
-
-        // Validate the destination directory.
-        destination = lib.writeableFolder(destination, DEFAULT_OUT_DESTINATION);
-        if (!fs.statSync(destination).isDirectory()) {
-            throw lib.format("Output destination is not a directory: \"{0}\"", destination);
-        }
 
         // Iterate on all set of connected module groups within the collection and create array of sourcefiles that
         // contain these modules.
@@ -209,6 +203,17 @@ module.exports = {
                 targets: targets
             });
         });
+
+        // If test mode is true, we do not need to proceed further with exporting the files
+        if (testMode) {
+            return;
+        }
+
+        // Validate the destination directory.
+        destination = lib.writeableFolder(destination, DEFAULT_OUT_DESTINATION);
+        if (!fs.statSync(destination).isDirectory()) {
+            throw lib.format("Output destination is not a directory: \"{0}\"", destination);
+        }
 
         // Adds the content of source file to target file.
         appendSource = function (sourceFileName) {
