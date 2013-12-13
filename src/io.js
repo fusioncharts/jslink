@@ -15,7 +15,7 @@ var E = "",
     DEFAULT_DEFINE_TAG_PATTERN = /\@module\s*([^\@\r\n]*)/ig,
     DEFAULT_INCLUDE_TAG_PATTERN = /\@requires\s*([^\@\r\n]*)/ig,
     DEFAULT_EXPORT_TAG_PATTERN = /\@export\s*([^\@\r\n]*)/ig,
-    DEFAULT_DOT_FILENAME = "./jslinker.dot",
+    DEFAULT_DOT_FILENAME = "./jslink.dot",
     DEFAULT_OUT_DESTINATION = "./out/",
 
     fs = require("fs"),
