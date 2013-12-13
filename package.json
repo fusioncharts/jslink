@@ -1,10 +1,10 @@
 {
-  "name": "jslinker",
+  "name": "jslink",
   "description": "Preprocessor for JavaScript",
   "version": "0.1.0",
   "license": "MIT",
 
-  "author": "FusionCharts Technologies  <support@fusioncharts.com>",
+  "author": "FusionCharts Technologies  <labs@fusioncharts.com>",
 
   "keywords": [
     "preprocessor",
@@ -13,12 +13,12 @@
 
   "repository": {
     "type": "git",
-    "url": "https://github.com/fusioncharts/jslinker.git"
+    "url": "https://github.com/fusioncharts/jslink.git"
   },
 
   "bugs": {
-    "url": "https://github.com/fusioncharts/jslinker/issues",
-    "email": "support@fusioncharts.com"
+    "url": "https://github.com/fusioncharts/jslink/issues",
+    "email": "labs@fusioncharts.com"
   },
 
   "dependencies": {
@@ -39,7 +39,7 @@
   "preferGlobal": true,
 
   "bin": {
-    "jslink": "./src/jslinker.js"
+    "jslink": "./src/jslink"
   },
 
   "man": ["./src/man/jslink.1"],

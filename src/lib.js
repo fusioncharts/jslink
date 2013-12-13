@@ -1,5 +1,5 @@
 /**
- * This module contains all the helper and library functions that are required by various modules of `jslinker`.
+ * This module contains all the helper and library functions that are required by various modules of `jslink`.
  * @module lib
  */
 var E = "",

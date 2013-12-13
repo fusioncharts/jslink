@@ -224,7 +224,7 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
 
 
     toString: function () {
-        var out = "digraph jsLinker {\n",
+        var out = "digraph jslink {\n",
             module,
             dependant;
 
