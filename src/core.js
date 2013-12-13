@@ -39,10 +39,10 @@ module.exports = /** @lends module:jslinker */ {
     /**
      * Process commandline
      */
-    cli: function () { /** @todo refactor */
+    cli: function (argv) { /** @todo refactor */
         // Parse all command-line arguments as an object and populate the unspecified properties with default
         // options.
-        var options = lib.argsArray2Object(process.argv.slice(2));
+        var options = lib.argsArray2Object(argv.slice(2));
 
         // Check whether to read options from a configuration file.
         if (options.conf) {
