@@ -1,41 +1,49 @@
 {
-  "name": "jslinker",
+  "name": "jslink",
   "description": "Preprocessor for JavaScript",
-  "homepage": "http://jslinker.shamasis.net/",
   "version": "0.1.0",
   "license": "MIT",
-  "author": "Shamasis Bhattacharya  <mail@shamasis.net>",
-  "contributors": [
-    {
-      "name": "Shamasis Bhattacharya",
-      "email": "mail@shamasis.net"
-    }
-  ],
-  "main": "./jslinker.js",
-  "preferGlobal": false,
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/shamasis/jslinker.git"
-  },
+
+  "author": "FusionCharts Technologies  <labs@fusioncharts.com>",
+
   "keywords": [
     "preprocessor",
     "linker"
   ],
+
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fusioncharts/jslink.git"
+  },
+
+  "bugs": {
+    "url": "https://github.com/fusioncharts/jslink/issues",
+    "email": "labs@fusioncharts.com"
+  },
+
   "dependencies": {
     "esprima": "~1.0.4",
-    "walkdir": "0.0.7"
-  },
-  "devDependencies": {
-    "esprima": "~1.0.4",
-    "jasmine-node": "~1.11.0",
-    "jshint": "~2.3.0",
-    "closurecompiler": "~1.1.5",
+    "walkdir": "0.0.7",
     "ansi": "~0.2.1"
   },
-  "scripts": {
-    "test": "jshint develop/",
-    "build": "./develop/build"
+
+  "devDependencies": {
+    "jasmine-node": "~1.11.0",
+    "jshint": "~2.3.0"
   },
+
+  "scripts": {
+    "test": "jshint ./src/"
+  },
+
+  "preferGlobal": true,
+
+  "bin": {
+    "jslink": "./src/jslink"
+  },
+
+  "man": ["./src/man/jslink.1"],
+
   "jshintConfig": {
     "bitwise": false,
     "camelcase": true,

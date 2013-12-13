@@ -1,6 +1,6 @@
 /**
  * Preprocessor for JavaScript
- * @module core
+ * @module jslink
  *
  * @requires lib
  * @requires collection
@@ -14,9 +14,9 @@ var VERSIONSTRING = "0.0.1",
     moduleIO = require("./io.js");
 
 
-module.exports = /** @lends module:jslinker */ {
+module.exports = /** @lends module:jslink */ {
     /**
-     * Version of jsLinker
+     * Version of jsLink
      * @returns {string}
      */
     version: function () {
@@ -39,10 +39,10 @@ module.exports = /** @lends module:jslinker */ {
     /**
      * Process commandline
      */
-    cli: function () { /** @todo refactor */
+    cli: function (argv) { /** @todo refactor */
         // Parse all command-line arguments as an object and populate the unspecified properties with default
         // options.
-        var options = lib.argsArray2Object(process.argv.slice(2));
+        var options = lib.argsArray2Object(argv.slice(2));
 
         // Check whether to read options from a configuration file.
         if (options.conf) {
@@ -54,7 +54,7 @@ module.exports = /** @lends module:jslinker */ {
 
         // If version query is sent then ignore all other options
         if (options.version) {
-            console.log("jslinker " + VERSIONSTRING);
+            console.log("jslink " + VERSIONSTRING);
             return;
         }
 
@@ -64,14 +64,14 @@ module.exports = /** @lends module:jslinker */ {
         }
 
         if (options.verbose) {
-            global.jslinkerVerbose = true;
+            global.jslinkVerbose = true;
         }
 
         // Notify that the processing started and also keep a note of the time.
         console.time("Preprocessing time");
         console.log("...");
 
-        if (global.jslinkerVerbose) {
+        if (global.jslinkVerbose) {
             console.log("Processing with the following configuration:");
             for (var prop in options) {
                 console.log(" ", prop + ":", options[prop]);
@@ -105,7 +105,7 @@ module.exports = /** @lends module:jslinker */ {
 
     /**
      * @param {object} options
-     * @param {module:jslinker~parseResult=} [callback]
+     * @param {module:jslink~parseResult=} [callback]
      * @returns {ModuleCollection}
      */
     parse: function (options, callback) { /** @todo refactor */
@@ -154,7 +154,7 @@ module.exports = /** @lends module:jslinker */ {
         }
 
         /**
-         * @callback module:jslinker~parseResult
+         * @callback module:jslink~parseResult
          * @param {Error=} [error]
          * @param {module:collection~ModuleCollection} [collection]
          */
@@ -172,14 +172,14 @@ module.exports = /** @lends module:jslinker */ {
         cursor
             // Split out the version
             .bold()
-            .write("\njslinker " + VERSIONSTRING + "\n").reset()
+            .write("\njslink " + VERSIONSTRING + "\n").reset()
 
             // Show commandline usage instruction
             .underline()
             .write("Commandline usage").reset().write(":\n")
 
-            .write("--version\tVersion info of jslinker\n")
+            .write("--version\tVersion info of jslink\n")
             .write("--source\tSource directory that is to be preprocessed\n")
-            .write("--verbose\tOutput all jslinker activities\n");
+            .write("--verbose\tOutput all jslink activities\n");
     }
 };
