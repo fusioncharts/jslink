@@ -15,8 +15,8 @@ var E = "",
     DEFAULT_DEFINE_TAG_PATTERN = /\@module\s*([^\@\r\n]*)/ig,
     DEFAULT_INCLUDE_TAG_PATTERN = /\@requires\s*([^\@\r\n]*)/ig,
     DEFAULT_EXPORT_TAG_PATTERN = /\@export\s*([^\@\r\n]*)/ig,
-    DEFAULT_DOT_FILENAME = "./jslink.dot",
-    DEFAULT_OUT_DESTINATION = "./out/",
+    DEFAULT_DOT_FILENAME = "jslink.dot",
+    DEFAULT_OUT_DESTINATION = "out/",
 
     fs = require("fs"),
     pathUtil = require("path"),
@@ -52,8 +52,13 @@ module.exports = {
         collection._statFilesProcessed = collection._statFilesProcessed || 0;
         collection._statFilesError = collection._statFilesError || 0;
 
+        // If path does not exist, it is an error
+        if (!fs.existsSync(path)) {
+            throw new Error(lib.format("Source path \"{0}\" does not exist or is not readable.", path));
+        }
+
         // Iterate over the source directories provided the root path exists.
-        fs.existsSync(path) && walkdir.sync(path, {
+        walkdir.sync(path, {
             /*jshint camelcase: false */// turn off since walkdir is 3rd-party.
             no_return: true, // save memory even if one has loads!
             no_recurse: !recurse

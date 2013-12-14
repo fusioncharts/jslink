@@ -42,7 +42,7 @@ Clone this repository and navigate to the repository root. Execute the following
 source file itself!
 
 ```
-./src/jslink --source=tests/structure/bilinear/ --destination=./out/bilinear/ --recursive --exportmap --overwrite
+./src/jslink tests/structure/bilinear/ --destination=out/bilinear/ --recursive --exportmap --overwrite
 ```
 
 The above command will output the following if all goes well and on further inspecting the `./out/bilinear/` directory
