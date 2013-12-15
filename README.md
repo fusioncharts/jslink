@@ -1,7 +1,7 @@
 # jslink
 
 
-Automated module cocatenation with dependency management - much like the C preprocessor. This commandline tool allows
+Automated module concatenation with dependency management - much like the C preprocessor. This commandline tool allows
 developers to concatenate their JavaScript (or other) source files with `@module` and `@requires` declarations. This
 utility removes the tight coupling of project build scripts and source files - as such allowing developers and teams to
 have the flexibility of changing the inclusion order and dependencies of source files without having to modify a build
@@ -133,12 +133,12 @@ of commandline parameters that can be used to configure jslink.
 `--help`            |Outputs the usage help text to terminal
 `--version`         |Shows the jslink version being used
 
-### `--destination=<output-directory>`
+#### `--destination=<output-directory>`
 By default, jslink outputs the files in `out/` folder of the current working directory. This can be changed using this
 parameter. Specifying `jslink source-js-directory/ --destination=concat/source/` will cause jslink to store all output
 files to `concat/source/` folder relative to the current working directory.
 
-### `--includePattern=<regular-expression>`
+#### `--includePattern=<regular-expression>`
 Using this parameter one can specify the file name pattern that has to be applied before processing a file from the
 source folder. Use this to white-list files within a source location that contains other files that does not require
 to be processed.
@@ -147,22 +147,22 @@ The default value of this parameter is `.+\\.js$`, which species that accept onl
 *While specifying your [regular-expression], ensure to escape the `\`
 character.*
 
-### `--excludePattern=<regular-expression>`
+#### `--excludePattern=<regular-expression>`
 Useful in black-listing files from the source folder. Use this to specify the file names that are to be ignored while
 reading the source directory. The default value is `/^$/` - implying that nothing is blacklisted.
 
-### `--recursive`
+#### `--recursive`
 In case the source files are within sub-directories, specifying this option will make jslink go through all directories
 and their children (and so on) within the source directory. By default recursive is not set.
 
 One can also specify this as `--recursive=true` or `--recursive=false` - very useful while overriding any cinfiguration
 provided using the `--conf` parameter.
 
-### `--overwrite`
+#### `--overwrite`
 Specifies whether jslink will overwrite files in case it encounters that they already exist on file-system. By default,
 overwriting is not allowed, use `--overwrite` or `--overwrite=true` to set otherwise.
 
-### `--source=<source-directory>`
+#### `--source=<source-directory>`
 This parameter is helpful in specifying the source folders from where jslink would read module definitions. This is
 usually your application's or library's development directory. Location can be specified as `--source=develop/src/`.
 More than one source directories can be specified - `jslink --source=src/app1/ --source=src/app2/`.
@@ -170,7 +170,7 @@ More than one source directories can be specified - `jslink --source=src/app1/ -
 Note that in case any parameter does not have `--` specified, it is treated as `--source`. For example, providing
 `jslink --source=src/app1/ --source=src/app2/` is equal to `jslink src/app1/ src/app2/`.
 
-### `--conf=<configuration-file-location>`
+#### `--conf=<configuration-file-location>`
 jslink allows you to store its commandline parameters within a configuration file in `JSON` format. This allows you to
 store specific configurations for repeated use. The jslink configuration file accepts all the command-line parameters
 with the same name.
@@ -188,7 +188,7 @@ Sample `jslink.conf` file would look like the following block and can be used as
 }
 ```
 
-### `--test`
+#### `--test`
 Runs jslink in test mode. In this mode, none of the conatenated files will be written to file-system. Instead, the
 entire process will be simulated to check for cyclic dependency and other such errors.
 
