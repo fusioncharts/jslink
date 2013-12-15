@@ -43,11 +43,12 @@ module.exports = /** @lends module:jslink */ {
     cli: function (argv) { /** @todo refactor */
         // Parse all command-line arguments as an object and populate the unspecified properties with default
         // options.
-        var options = lib.argsArray2Object(argv.slice(2), "source");
+        var options = lib.argsArray2Object(argv.slice(2), "source"),
+            conf;
 
         // Check whether to read options from a configuration file.
-        if (options.conf) {
-            options = lib.fill(options, lib.readJSONFromFile(options.conf));
+        if (options.conf && (typeof (conf = lib.readJSONFromFile(options.conf)).options === "object")) {
+            options = lib.fill(options, conf.options);
         }
         options = lib.fill(options, module.exports.options);
         options = lib.parseJSONBooleans(options, ["recursive", "exportmap", "overwrite", "strict", "verbose", "help",
