@@ -50,7 +50,7 @@ collectionAdjacencyIndex = function (module, index) {
     var item;
 
     if (!module.indexing) {
-        module.index = index || 0;
+        module.index = index;
         module.indexing = true;
 
         for (item in module.requires) {

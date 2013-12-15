@@ -1,6 +1,7 @@
 /**
  * Preprocessor for JavaScript
  * @module jslink
+ * @export jslink.js
  *
  * @requires lib
  * @requires collection
@@ -147,6 +148,7 @@ module.exports = /** @lends module:jslink */ {
             if (options.test) {
                 cursor.write ("Running in test mode.\n");
             }
+
             moduleIO.exportCollectionToFS(collection, options.destination, options.overwrite, options.test);
             cursor.write(".");
         }
