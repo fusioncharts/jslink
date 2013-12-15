@@ -113,6 +113,8 @@ even execute the following command to see `jslink` in action.
 ```bash
 ./src/jslink tests/structure/bilinear --destination=out/bilinear/ --overwrite
 ```
+The output folder should have two files `main.js` and `main.helper.js` as produced from the following dependency map.
+![text](https://raw.github.com/wiki/fusioncharts/jslink/jslink-bilinear-sample.png)
 
 ## List of Commandline Options
 
