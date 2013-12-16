@@ -1,10 +1,10 @@
 {
   "name": "jslink",
   "description": "Preprocessor for JavaScript",
-  "version": "0.0.2",
+  "version": "1.0.2",
   "license": "MIT",
 
-  "author": "FusionCharts Technologies  <labs@fusioncharts.com>",
+  "author": "FusionCharts Technologies  <mail@labs.fusioncharts.com>",
 
   "keywords": [
     "preprocessor",
@@ -18,7 +18,7 @@
 
   "bugs": {
     "url": "https://github.com/fusioncharts/jslink/issues",
-    "email": "labs@fusioncharts.com"
+    "email": "jslink@labs.fusioncharts.com"
   },
 
   "dependencies": {
@@ -33,13 +33,13 @@
   },
 
   "scripts": {
-    "test": "jshint ./src/"
+    "test": "jshint src/"
   },
 
   "preferGlobal": false,
-  "bin": "./src/jslink",
-  "main": "./src/core.js",
-  "man": ["./src/man/jslink.1"],
+  "bin": "src/jslink",
+  "main": "src/core.js",
+  "man": ["src/man/jslink.1"],
 
   "jshintConfig": {
     "bitwise": false,

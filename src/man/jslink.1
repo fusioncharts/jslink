@@ -1,1 +1,55 @@
-jslink Hello World
+.\" Manpage for jslink.
+.\" Contact jslink@labs.fusioncharts.com for reporting any issue.
+.TH man 8 "16 Dec 2013" "1.0.2" "jslink man page"
+
+.SH NAME
+
+jslink \- Concatenate source files with dependency trace
+
+.SH SYNOPSIS
+
+jslink <source-location> [<source-location>...] [--option[=<value>]...]
+
+.SH DESCRIPTION
+
+Automated module concatenation with dependency management - much like the C preprocessor. This commandline tool allows
+developers to concatenate their JavaScript (or other) source files with `@module` and `@requires` declarations. This
+utility removes the tight coupling of project build scripts and source files - as such allowing developers and teams to
+have the flexibility of changing the inclusion order and dependencies of source files without having to modify a build
+script.
+
+.SH OPTIONS
+
+--destination=<location>    The output directory where all processed files will be saved
+
+--includePattern=<regex>    White-list of input files names from source directory
+
+--excludePattern=<regex>    Black-list of input files names from source directory
+
+--source=<location> (...)   The source directory to read modules from
+
+--conf=<location>           jslink configuration JSON file location\n
+
+--recursive                 Look into all sub-directories while reading source directory
+
+--test                      Run jslink in test mode without writing to file-system
+
+--verbose                   Will output (hopefully) useful information during the linking process
+
+--help                      Outputs the usage help text to terminal
+
+--version                   Shows the jslink version being used\n;
+
+.SH LIMITATIONS
+
+Whenever any option asks you to provide a directory, if you are not providing `.` or `..`, ensure that you end the path
+with a `/`.
+
+If there is a cyclic dependency found in the definitions (such as A requires B requires A), this utility will stop with
+an error.
+
+Presently, jslink cannot output distinct dependency tree with export directives having modules required by disparate
+group of modules.
+
+.SH AUTHOR
+FusionCharts Technlologies (jslink@labs.fusioncharts.com)

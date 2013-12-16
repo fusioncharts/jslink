@@ -15,8 +15,8 @@ var E = "",
     DEFAULT_DEFINE_TAG_PATTERN = /\@module\s*([^\@\r\n]*)/ig,
     DEFAULT_INCLUDE_TAG_PATTERN = /\@requires\s*([^\@\r\n]*)/ig,
     DEFAULT_EXPORT_TAG_PATTERN = /\@export\s*([^\@\r\n]*)/ig,
-    DEFAULT_DOT_FILENAME = "./jslink.dot",
-    DEFAULT_OUT_DESTINATION = "./out/",
+    DEFAULT_DOT_FILENAME = "jslink.dot",
+    DEFAULT_OUT_DESTINATION = "out/",
 
     fs = require("fs"),
     pathUtil = require("path"),
@@ -24,7 +24,44 @@ var E = "",
     esprima = require("esprima"),
     lib = require("./lib.js"),
 
-    ModuleCollection = require("./collection.js");
+    ModuleCollection = require("./collection.js"),
+    writeSerializedModules; // function
+
+/**
+ * Writes a 2d array of modules to a set of files with the module source contents.
+ *
+ * @param {Array<Array>} matrix
+ * @param {string=} destination
+ * @param {boolean=} overwrite
+ */
+writeSerializedModules = function (matrix, destination, overwrite) {
+    var createTarget, // function
+        appendSource; // function
+
+    // Validate the destination directory.
+    destination = lib.writeableFolder(destination, DEFAULT_OUT_DESTINATION);
+
+    if (!fs.statSync(destination).isDirectory()) {
+        throw lib.format("Output destination is not a directory: \"{0}\"", destination);
+    }
+
+    // Adds the content of source file to target file.
+    appendSource = function (sourceFileName) {
+        fs.appendFileSync(this[0], fs.readFileSync(sourceFileName));
+    };
+
+    // Create or empty the file name from the bunch of targets.
+    createTarget = function (targetFileName) {
+        targetFileName = pathUtil.join(destination, targetFileName); // append destination to file name
+        lib.writeableFile(true, targetFileName, overwrite, false, true);
+        this.forEach(appendSource, [targetFileName]);
+    };
+
+    matrix.forEach(function (bundle) {
+        // Create and append files separately to reduce spatial complexity.
+        bundle.targets.forEach(createTarget, bundle.sources);
+    });
+};
 
 module.exports = {
     /**
@@ -52,8 +89,13 @@ module.exports = {
         collection._statFilesProcessed = collection._statFilesProcessed || 0;
         collection._statFilesError = collection._statFilesError || 0;
 
+        // If path does not exist, it is an error
+        if (!fs.existsSync(path)) {
+            throw new Error(lib.format("Source path \"{0}\" does not exist or is not readable.", path));
+        }
+
         // Iterate over the source directories provided the root path exists.
-        fs.existsSync(path) && walkdir.sync(path, {
+        walkdir.sync(path, {
             /*jshint camelcase: false */// turn off since walkdir is 3rd-party.
             no_return: true, // save memory even if one has loads!
             no_recurse: !recurse
@@ -164,9 +206,7 @@ module.exports = {
 
     exportCollectionToFS: function (collection, destination, overwrite, testMode) {
         var serialized = collection.serialize(),
-            bundles = [],
-            createTarget, // function
-            appendSource; // function
+            matrix = [];
 
         // Iterate on all set of connected module groups within the collection and create array of sourcefiles that
         // contain these modules.
@@ -198,39 +238,16 @@ module.exports = {
                     module.targets && (targets = targets.concat(module.targets));
                 }
             }
-            bundles.push({
+            matrix.push({
                 sources: stack,
                 targets: targets
             });
         });
 
         // If test mode is true, we do not need to proceed further with exporting the files
-        if (testMode) {
-            return;
+        if (!testMode) {
+            writeSerializedModules(matrix, destination, overwrite);
         }
-
-        // Validate the destination directory.
-        destination = lib.writeableFolder(destination, DEFAULT_OUT_DESTINATION);
-        if (!fs.statSync(destination).isDirectory()) {
-            throw lib.format("Output destination is not a directory: \"{0}\"", destination);
-        }
-
-        // Adds the content of source file to target file.
-        appendSource = function (sourceFileName) {
-            fs.appendFileSync(this[0], fs.readFileSync(sourceFileName));
-        };
-
-        // Create or empty the file name from the bunch of targets.
-        createTarget = function (targetFileName) {
-            targetFileName = pathUtil.join(destination, targetFileName); // append destination to file name
-            lib.writeableFile(true, targetFileName, overwrite, false, true);
-            this.forEach(appendSource, [targetFileName]);
-        };
-
-        bundles.forEach(function (bundle) {
-            // Create and append files separately to reduce spatial complexity.
-            bundle.targets.forEach(createTarget, bundle.sources);
-        });
     },
 
     /**

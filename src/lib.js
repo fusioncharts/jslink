@@ -94,10 +94,11 @@ module.exports = lib = /** @lends module:lib */ {
      * Converts an arguments array (usually from CLI) in format similar to Closure Compiler and returns an object of
      * options.
      *
-     * @param {Array} args -
+     * @param {Array} args
+     * @param {string=} [don] - The default option to which to append all stray options
      * @returns {object}
      */
-    argsArray2Object: function (args) {
+    argsArray2Object: function (args, don) {
         var out = {},
             replacer,
             arg;
@@ -115,7 +116,15 @@ module.exports = lib = /** @lends module:lib */ {
 
         // Loop through arguments and prepare options object.
         while (arg = args.shift()) {
-            arg.replace(/^\-\-([a-z]*)\=?([\s\S]*)?$/i, replacer);
+
+            if (/^\-\-[^\-]*/g.test(arg)) {
+                arg.replace(/^\-\-([a-z]*)\=?([\s\S]*)?$/i, replacer);
+            }
+            // In case it is not an option object, we add it to default option name.
+            else if (don) {
+                out.hasOwnProperty(don) && (out[don].push ? out[don] : (out[don] = [out[don]])).push(arg) ||
+                    (out[don] = arg);
+            }
         }
         return out;
     },

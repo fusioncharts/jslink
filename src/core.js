@@ -1,6 +1,7 @@
 /**
  * Preprocessor for JavaScript
  * @module jslink
+ * @export jslink.js
  *
  * @requires lib
  * @requires collection
@@ -27,7 +28,7 @@ module.exports = /** @lends module:jslink */ {
         recursive: false,
         includePattern: /.+\.js$/,
         excludePattern: /^$/,
-        destination: "./out/",
+        destination: "out/",
         strict: true,
         exportmap: false,
         overwrite: false,
@@ -42,11 +43,12 @@ module.exports = /** @lends module:jslink */ {
     cli: function (argv) { /** @todo refactor */
         // Parse all command-line arguments as an object and populate the unspecified properties with default
         // options.
-        var options = lib.argsArray2Object(argv.slice(2));
+        var options = lib.argsArray2Object(argv.slice(2), "source"),
+            conf;
 
         // Check whether to read options from a configuration file.
-        if (options.conf) {
-            options = lib.fill(options, lib.readJSONFromFile(options.conf));
+        if (options.conf && (typeof (conf = lib.readJSONFromFile(options.conf)).options === "object")) {
+            options = lib.fill(options, conf.options);
         }
         options = lib.fill(options, module.exports.options);
         options = lib.parseJSONBooleans(options, ["recursive", "exportmap", "overwrite", "strict", "verbose", "help",
@@ -69,7 +71,7 @@ module.exports = /** @lends module:jslink */ {
 
         // Notify that the processing started and also keep a note of the time.
         console.time("Preprocessing time");
-        console.log("...");
+        cursor.write(".");
 
         if (global.jslinkVerbose) {
             console.log("Processing with the following configuration:");
@@ -86,14 +88,13 @@ module.exports = /** @lends module:jslink */ {
         });
 
         return this.parse(options, function (error, collection, stat) { // callback for output to console
-            cursor.reset();
+            cursor.reset().write("\n");
             if (error || !collection) {
-                cursor.red();
-                console.warn(error);
+                cursor.red().write((error.message && error.message || error) + "\n");
             }
             else {
-                cursor.green();
-                console.info(lib.format("{0}, {1} processed for {2}.", lib.plural(stat.filesProcessed || 0, "file"),
+                cursor.green()
+                .write(lib.format("{0} with {1} processed for {2}.\n", lib.plural(stat.filesProcessed || 0, "file"),
                     lib.plural(stat.definedModules.length || 0, "module"),
                     lib.plural(stat.numberOfExports || 0, "export directive")));
 
@@ -127,20 +128,20 @@ module.exports = /** @lends module:jslink */ {
                         options.includePattern, options.excludePattern);
                 }
             }
-
-            // Make options.destination relative
-            if (options.hasOwnProperty("destination")) {
-                options.destination = "./" + options.destination;
-            }
-
+            cursor.write(".");
             stat = collection.analyse();
-            if (options.strict && stat.orphanModules.length) {
-                throw lib.format("{0} detected under strict mode.\n- {1}", lib.plural(stat.orphanModules.length,
-                    "orphan module"), stat.orphanModules.join("\n- "));
+            cursor.write(".");
+
+            if (options.strict) {
+                if (stat.orphanModules.length) {
+                    throw lib.format("{0} detected under strict mode.\n- {1}", lib.plural(stat.orphanModules.length,
+                        "orphan module"), stat.orphanModules.join("\n- "));
+                }
             }
 
             if (options.exportmap) {
                 moduleIO.writeCollectionToDot(collection, options.exportmap, options.overwrite);
+                cursor.write(".");
             }
 
             // If the test flag is set to true, we do not initiate export of the files. Though we need to calculate
@@ -148,12 +149,12 @@ module.exports = /** @lends module:jslink */ {
             if (options.test) {
                 cursor.write ("Running in test mode.\n");
             }
-            moduleIO.exportCollectionToFS(collection, options.destination, options.overwrite, options.strict,
-                options.test);
+
+            moduleIO.exportCollectionToFS(collection, options.destination, options.overwrite, options.test);
+            cursor.write(".");
         }
         catch (err) {
             error = err;
-            throw err;
         }
 
         /**
@@ -174,15 +175,22 @@ module.exports = /** @lends module:jslink */ {
 
         cursor
             // Split out the version
-            .bold()
-            .write("\njslink " + VERSIONSTRING + "\n").reset()
+            .reset()
+            .write("jslink <source-location> [<source-location>...] [--option[=<value>]...]\n\n")
 
             // Show commandline usage instruction
             .underline()
-            .write("Commandline usage").reset().write(":\n")
+            .write("Parameters").reset().write(":\n")
 
-            .write("--version\tVersion info of jslink\n")
-            .write("--source\tSource directory that is to be preprocessed\n")
-            .write("--verbose\tOutput all jslink activities\n");
+            .write("--destination=<location>\tThe output directory where all processed files will be saved\n")
+            .write("--includePattern=<regex>\tWhite-list of input files names from source directory\n")
+            .write("--excludePattern=<regex>\tBlack-list of input files names from source directory\n")
+            .write("--source=<location> (...)\tThe source directory to read modules from\n")
+            .write("--conf=<location>\t\tjslink configuration JSON file location\n\n")
+            .write("--recursive\tLook into all sub-directories while reading source directory\n")
+            .write("--test\t\tRun jslink in test mode without writing to file-system\n")
+            .write("--verbose\tWill output (hopefully) useful information during the linking process\n")
+            .write("--help\t\tOutputs the usage help text to terminal\n")
+            .write("--version\tShows the jslink version being used\n\n");
     }
 };
