@@ -131,7 +131,7 @@ of commandline parameters that can be used to configure jslink.
 `--source`          |The source directory to read from
 `--conf`            |jslink configuration JSON file location
 `--test`            |Run jslink in test mode without writing to file-system
-`--verbose`         |Will output useful (hopefully) information during the linking process
+`--verbose`         |Will output (hopefully) useful information during the linking process
 `--help`            |Outputs the usage help text to terminal
 `--version`         |Shows the jslink version being used
 

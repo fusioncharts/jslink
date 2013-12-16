@@ -180,13 +180,17 @@ module.exports = /** @lends module:jslink */ {
 
             // Show commandline usage instruction
             .underline()
-            .write("Description").reset().write(":\n")
+            .write("Parameters").reset().write(":\n")
 
-            .write("--version\tVersion info of jslink\n")
-            .write("--destination\tOutput directory of preprocessed files\n")
-            .write("--exportmap\tAlso output a graphviz dot file\n")
-            .write("--strict\tEnforces strict mode\n")
-            .write("--test\t\tEnforces test mode\n")
-            .write("--verbose\tOutput all jslink activities\n\n");
+            .write("--destination=<location>\tThe output directory where all processed files will be saved\n")
+            .write("--includePattern=<regex>\tWhite-list of input files names from source directory\n")
+            .write("--excludePattern=<regex>\tBlack-list of input files names from source directory\n")
+            .write("--source=<location> (...)\tThe source directory to read modules from\n")
+            .write("--conf=<location>\t\tjslink configuration JSON file location\n\n")
+            .write("--recursive\tLook into all sub-directories while reading source directory\n")
+            .write("--test\t\tRun jslink in test mode without writing to file-system\n")
+            .write("--verbose\tWill output (hopefully) useful information during the linking process\n")
+            .write("--help\t\tOutputs the usage help text to terminal\n")
+            .write("--version\tShows the jslink version being used\n\n");
     }
 };
