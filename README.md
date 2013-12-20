@@ -1,5 +1,6 @@
-# jslink
+<p><img src="https://raw.github.com/wiki/fusioncharts/jslink/jslink-logo-64.png" align="right" /></p>
 
+# jslink 
 
 Automated module concatenation with dependency management - much like the C preprocessor. This commandline tool allows
 developers to concatenate their JavaScript (or other) source files with `@module` and `@requires` declarations. This
