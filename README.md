@@ -1,4 +1,4 @@
-# jslink
+# <img src="https://raw.github.com/wiki/fusioncharts/jslink/jslink-logo-64.png" valign="text-bottom" />jslink
 
 
 Automated module concatenation with dependency management - much like the C preprocessor. This commandline tool allows
