@@ -1,6 +1,6 @@
 <p><img src="https://raw.github.com/wiki/fusioncharts/jslink/jslink-logo-64.png" align="right" /></p>
 
-# jslink 
+# jslink
 
 Automated module concatenation with dependency management - much like the C preprocessor. This commandline tool allows
 developers to concatenate their JavaScript (or other) source files with `@module` and `@requires` declarations. This
@@ -120,7 +120,7 @@ The output folder should have two files `main.js` and `main.helper.js` as produc
 ## List of Commandline Options
 
 By default, any command-line parameter sent to jslink that is not prefixed using double-hyphen (i.e. `--`,) jslink
-treats that as a parameter specifyin which directory to read the source files from. Other than this, there are a number
+treats that as a parameter specifying which directory to read the source files from. Other than this, there are a number
 of commandline parameters that can be used to configure jslink.
 
 |Parameter          |Summary

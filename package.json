@@ -1,14 +1,22 @@
 {
   "name": "jslink",
   "description": "Preprocessor for JavaScript",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "license": "MIT",
 
   "author": "FusionCharts Technologies  <mail@labs.fusioncharts.com>",
 
   "keywords": [
     "preprocessor",
-    "linker"
+    "linker",
+    "@module",
+    "@requires",
+    "closure",
+    "jsdoc",
+    "concatenation",
+    "integration",
+    "build",
+    "automation"
   ],
 
   "repository": {
@@ -36,7 +44,8 @@
     "test": "jshint src/"
   },
 
-  "preferGlobal": false,
+  "preferGlobal": true,
+  "os" : ["!win32"],
   "bin": {
     "jslink": "src/jslink"
   },
