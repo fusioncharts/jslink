@@ -349,7 +349,7 @@ ModuleCollection.Module = function (name, source) {
      * Export directives
      * @property {Object<Array>} [targets]
      */
-    // this.targets = []; // available after addTarget()
+    this.exports = [];
 
     /**
      * The source file path that defines this module. This is to be used as a getter and should be set using the
@@ -386,15 +386,15 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
      * @param {module:collection~ModuleCollection.Module} module
      * @param {string} meta
      */
-    addTarget: function (meta) {
+    addExport: function (meta) {
         // If export meta is not defined then we treat the module name as meta.
         if (!meta) {
             meta = this.name;
         }
         // We add the meta information unless there is a duplicate. At least the same module should not have two same
         // export meta!
-        if ((this.targets || (this.targets = [])).indexOf(meta) === -1) {
-            this.targets.push(meta);
+        if ((this.exports || (this.exports = [])).indexOf(meta) === -1) {
+            this.exports.push(meta);
         }
 
         return module;
@@ -463,10 +463,7 @@ ModuleCollection.analysers.push(function (stat) {
     for (prop in this.modules) {
         module = this.modules[prop];
         stat[module.defined() ? "definedModules" : "orphanModules"].push(module);
-        stat.numberOfExports += module.targets && module.targets.length || 0;
-    }
-    for (prop in this.targets) {
-
+        stat.numberOfExports += module.exports.length || 0;
     }
 });
 

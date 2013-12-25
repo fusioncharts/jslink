@@ -195,6 +195,24 @@ Sample `jslink.conf` file would look like the following block and can be used as
 Runs jslink in test mode. In this mode, none of the conatenated files will be written to file-system. Instead, the
 entire process will be simulated to check for cyclic dependency and other such errors.
 
+## Including direct file references as dependencies
+`jslink` allows you to provide direct file references in `@requires` directive. As such, third-party libraries or other
+source files not complying to `@module` syntax can be included. To reference a file as requirement, simply provide the
+relative path to the requirement file in your `@requires` tag.
+
+Suppose your library needs jQuery to be concatenated before itself.
+
+```javascript
+/**
+ * This is the main file of one library that requires jQuery to be concatenated with itself.
+ * @module WebApp
+ * @requires ./jquery.min.js
+ * @export webapp.js
+ */
+```
+
+> You must provide a file path in the `@requires` tag that is relative to the source file in which you are defining the
+> requirement.
 
 ## Road Ahead
 

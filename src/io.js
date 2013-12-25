@@ -59,7 +59,7 @@ writeSerializedModules = function (matrix, destination, overwrite) {
 
     matrix.forEach(function (bundle) {
         // Create and append files separately to reduce spatial complexity.
-        bundle.targets.forEach(createTarget, bundle.sources);
+        bundle.exports.forEach(createTarget, bundle.sources);
     });
 };
 
@@ -105,6 +105,7 @@ module.exports = {
                 comments,
                 comment,
                 module, // to control parsing flow when module is discovered in a block
+                extern, // for creating external modules in dependencyAdder
                 moduleAdder, // function
                 dependencyAdder, // function
                 exportAdder, // function
@@ -160,6 +161,24 @@ module.exports = {
             dependencyAdder = function ($glob, $1) {
                 // Extract the value of the token.
                 if ($1 && ($1 = $1.trim())) {
+                    // While adding dependency, check whether it is a third-party external file
+                    if (/^\.?\.\/.*[^\/]$/.test($1)) {
+                        // We build the relative path to the dependant module and check if file exists.
+                        // Module is anyway defined here!
+                        $1 = pathUtil.join(pathUtil.dirname(module.source), $1);
+
+                        // If the file does not exist, we raise an error.
+                        if (!fs.existsSync($1)) {
+                            throw new Error (lib.format("External module file not found: \"{0}\"", $1));
+                        }
+
+                        // Now that we have an absolute module file name, we check whether it is already defined. If
+                        // not, we do so.
+                        extern = collection.get(pathUtil.relative(".", $1), true);
+                        (!extern.defined()) && extern.define($1);
+                        // Set the module name to the relative value so as not to output full path in report.
+                        $1 = pathUtil.relative(".", $1);
+                    }
                     collection.connect(module, $1);
                 }
             };
@@ -169,7 +188,7 @@ module.exports = {
             exportAdder = function ($glob, $1) {
                 // Extract the value from token.
                 if ($1 && ($1 = $1.trim())) {
-                    module.addTarget($1);
+                    module.addExport($1);
                 }
             };
 
@@ -212,7 +231,7 @@ module.exports = {
         // contain these modules.
         serialized.forEach(function (modules) {
             var stack = [],
-                targets = [],
+                exports = [],
                 added = {}, // use this to check whether a source was already pushed in stack.
                 module,
                 i;
@@ -235,12 +254,12 @@ module.exports = {
                 if (module.defined()) {
                     stack.unshift(module.source); // add it to stack
                     // We check if this module has any export directives and if so, add it for later.
-                    module.targets && (targets = targets.concat(module.targets));
+                    module.exports && (exports = exports.concat(module.exports));
                 }
             }
             matrix.push({
                 sources: stack,
-                targets: targets
+                exports: exports
             });
         });
 
