@@ -105,6 +105,41 @@ npm install jslink
 jslink can either be installed from NPM repository or this git repository can be cloned. If the repository is cloned,
 there are a few dependencies that needs to be procured. You may easily install them using `npm install -d`.
 
+## Including direct file references as dependencies
+`jslink` allows you to provide direct file references in `@requires` directive. As such, third-party libraries or other
+source files not complying to `@module` syntax can be included. To reference a file as requirement, simply provide the
+relative path to the requirement file in your `@requires` tag.
+
+Suppose your library needs jQuery to be concatenated before itself.
+
+```javascript
+/**
+ * This is the main file of one library that requires jQuery to be concatenated with itself.
+ * @module WebApp
+ * @requires ./jquery.min.js
+ * @export webapp.js
+ */
+```
+
+> You must provide a file path in the `@requires` tag that is relative to the source file in which you are defining the
+> requirement.
+
+## Ignoring a module specification
+
+Simply adding the `@ignore` directive into the module specification will cause `jslink` to completely ignore that
+comment block. This can come in handy where you have duplicate or temporary files in module definition that does need to
+be part of source code but not as part of the concatenation process.
+
+```javascript
+/**
+ * This is the main file of one library that requires jQuery to be concatenated with itself.
+ * @module WebApp
+ * @requires Library
+ * @export webapp.js
+ *
+ * @ignore
+ */
+```
 
 ## Usage examples
 Refer to `tests/structures` directory within this repository for a set of dummy project dependency structures. The
@@ -195,25 +230,6 @@ Sample `jslink.conf` file would look like the following block and can be used as
 Runs jslink in test mode. In this mode, none of the conatenated files will be written to file-system. Instead, the
 entire process will be simulated to check for cyclic dependency and other such errors.
 
-## Including direct file references as dependencies
-`jslink` allows you to provide direct file references in `@requires` directive. As such, third-party libraries or other
-source files not complying to `@module` syntax can be included. To reference a file as requirement, simply provide the
-relative path to the requirement file in your `@requires` tag.
-
-Suppose your library needs jQuery to be concatenated before itself.
-
-```javascript
-/**
- * This is the main file of one library that requires jQuery to be concatenated with itself.
- * @module WebApp
- * @requires ./jquery.min.js
- * @export webapp.js
- */
-```
-
-> You must provide a file path in the `@requires` tag that is relative to the source file in which you are defining the
-> requirement.
-
 ## Road Ahead
 
 - Solution on Windows platform.
@@ -222,6 +238,8 @@ Suppose your library needs jQuery to be concatenated before itself.
 - Simple text replacement macros.
 - Ability to output all module graphs without @exports (already implemented, pending proper API decision)
 - Direct image output of graphViz dot files.
+- Ability to do conditional requirement and ignore using `@requiresIf {variable} <module>`, `@requiresIfNot {variable}
+<module>`. Also `@ignoreIf {variable}` and `@ignoreIfNot {variable}`.
 
 ## Technical Notes
 - Whenever any option asks you to provide a directory, if you are not providing `.` or `..`, ensure that you end the
