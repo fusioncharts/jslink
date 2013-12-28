@@ -242,6 +242,11 @@ entire process will be simulated to check for cyclic dependency and other such e
 - Direct image output of graphViz dot files.
 - Ability to do conditional requirement and ignore using `@requiresIf {variable} <module>`, `@requiresIfNot {variable}
 <module>`. Also `@ignoreIf {variable}` and `@ignoreIfNot {variable}`.
+- Add more chatter to verbose output.
+- Have a silent mode
+- Replace sections within comment blocks using external variables, something like {@replace <variable>}
+- Remove @todo blocks and in case the block has other directives, remove only @todo section
+- Hoist @license blocks to top and optionally merge them.
 
 ## Technical Notes
 - Whenever any option asks you to provide a directory, if you are not providing `.` or `..`, ensure that you end the
@@ -250,7 +255,5 @@ entire process will be simulated to check for cyclic dependency and other such e
   with an error.
 - Presently, jslink cannot output distinct dependency tree with export directives having modules required by disparate
   group of modules.
-- Add more chatter to verbose output.
-- Have a silent mode
 
 [regular-expression]: http://en.wikipedia.org/wiki/Regular_expression
