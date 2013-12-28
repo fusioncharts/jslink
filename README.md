@@ -1,6 +1,6 @@
-<p><img src="https://raw.github.com/wiki/fusioncharts/jslink/jslink-logo-64.png" align="right" /></p>
+<p><a href="https://drone.io/github.com/fusioncharts/jslink/latest"><img src="https://drone.io/github.com/fusioncharts/jslink/status.png"></a><img src="https://raw.github.com/wiki/fusioncharts/jslink/jslink-logo-64.png" align="right" /></p>
 
-# jslink
+# jslink 
 
 Automated module concatenation with dependency management - much like the C preprocessor. This commandline tool allows
 developers to concatenate their JavaScript (or other) source files with `@module` and `@requires` declarations. This
@@ -8,7 +8,7 @@ utility removes the tight coupling of project build scripts and source files - a
 have the flexibility of changing the inclusion order and dependencies of source files without having to modify a build
 script.
 
-<a href="https://nodei.co/npm/jslink/"><img height="45" src="https://nodei.co/npm/jslink.png?compact=true"></a>
+<img height="45" src="https://nodei.co/npm/jslink.png?compact=true">
 
 ## Why jslink?
 
