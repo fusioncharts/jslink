@@ -1,7 +1,7 @@
 <a href="http://www.fusioncharts.com/"><img src="https://raw.github.com/wiki/fusioncharts/jslink/jslink-logo-64.png" align="right" /></a>
 [![GitHub version][git-badge]](https://github.com/fusioncharts/jslink)
 [![NPM version][npm-badge]](https://npmjs.org/package/jslink)
-[![Build status][drone-badge]](https://drone.io/github.com/fusioncharts/jslink/latest)
+[![Build Status][travis-badge]](https://travis-ci.org/fusioncharts/jslink)
 
 # jslink
 
@@ -260,4 +260,5 @@ entire process will be simulated to check for cyclic dependency and other such e
 [git-badge]: https://badge.fury.io/gh/fusioncharts%2Fjslink.png
 [npm-badge]: https://badge.fury.io/js/jslink.png
 [drone-badge]: https://drone.io/github.com/fusioncharts/jslink/status.png
+[travis-badge]: https://travis-ci.org/fusioncharts/jslink.png?branch=master
 [npminstall-badge]: https://nodei.co/npm/jslink.png?compact=true
