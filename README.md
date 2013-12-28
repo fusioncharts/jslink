@@ -1,14 +1,15 @@
-<p><a href="https://drone.io/github.com/fusioncharts/jslink/latest"><img src="https://drone.io/github.com/fusioncharts/jslink/status.png"></a><img src="https://raw.github.com/wiki/fusioncharts/jslink/jslink-logo-64.png" align="right" /></p>
+<a href="http://www.fusioncharts.com/"><img src="https://raw.github.com/wiki/fusioncharts/jslink/jslink-logo-64.png" align="right" /></a>
+[![GitHub version][git-badge]](https://github.com/fusioncharts/jslink)
+[![NPM version][npm-badge]](https://npmjs.org/package/jslink)
+[![Build status][drone-badge]](https://drone.io/github.com/fusioncharts/jslink/latest)
 
-# jslink 
+# jslink
 
 Automated module concatenation with dependency management - much like the C preprocessor. This commandline tool allows
 developers to concatenate their JavaScript (or other) source files with `@module` and `@requires` declarations. This
 utility removes the tight coupling of project build scripts and source files - as such allowing developers and teams to
 have the flexibility of changing the inclusion order and dependencies of source files without having to modify a build
 script.
-
-<img height="45" src="https://nodei.co/npm/jslink.png?compact=true">
 
 ## Why jslink?
 
@@ -100,9 +101,8 @@ jslink source-js-directory/
 ## Installing jslink
 The easiest way to install jslink is from the NPM registry.
 
-```bash
-npm install jslink -g
-```
+[![npm install jslink -g][npminstall-badge]](https://npmjs.org/package/jslink)
+
 
 jslink can either be installed from NPM repository or this git repository can be cloned. If the repository is cloned,
 there are a few dependencies that needs to be procured. You may easily install them using `npm install -d`.
@@ -152,7 +152,7 @@ even execute the following command to see `jslink` in action.
 ./src/jslink tests/structure/bilinear --destination=out/bilinear/ --overwrite
 ```
 The output folder should have two files `main.js` and `main.helper.js` as produced from the following dependency map.
-![text](https://raw.github.com/wiki/fusioncharts/jslink/jslink-bilinear-sample.png)
+![sample-jslink-output](https://raw.github.com/wiki/fusioncharts/jslink/jslink-bilinear-sample.png)
 
 ## List of Commandline Options
 
@@ -242,6 +242,11 @@ entire process will be simulated to check for cyclic dependency and other such e
 - Direct image output of graphViz dot files.
 - Ability to do conditional requirement and ignore using `@requiresIf {variable} <module>`, `@requiresIfNot {variable}
 <module>`. Also `@ignoreIf {variable}` and `@ignoreIfNot {variable}`.
+- Add more chatter to verbose output.
+- Have a silent mode
+- Replace sections within comment blocks using external variables, something like {@replace <variable>}
+- Remove @todo blocks and in case the block has other directives, remove only @todo section
+- Hoist @license blocks to top and optionally merge them.
 
 ## Technical Notes
 - Whenever any option asks you to provide a directory, if you are not providing `.` or `..`, ensure that you end the
@@ -250,7 +255,9 @@ entire process will be simulated to check for cyclic dependency and other such e
   with an error.
 - Presently, jslink cannot output distinct dependency tree with export directives having modules required by disparate
   group of modules.
-- Add more chatter to verbose output.
-- Have a silent mode
 
 [regular-expression]: http://en.wikipedia.org/wiki/Regular_expression
+[git-badge]: https://badge.fury.io/gh/fusioncharts%2Fjslink.png
+[npm-badge]: https://badge.fury.io/js/jslink.png
+[drone-badge]: https://drone.io/github.com/fusioncharts/jslink/status.png
+[npminstall-badge]: https://nodei.co/npm/jslink.png?compact=true
