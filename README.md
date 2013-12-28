@@ -8,6 +8,8 @@ utility removes the tight coupling of project build scripts and source files - a
 have the flexibility of changing the inclusion order and dependencies of source files without having to modify a build
 script.
 
+<a href="https://nodei.co/npm/jslink/"><img height="45" src="https://nodei.co/npm/jslink.png?compact=true"></a>
+
 ## Why jslink?
 
 Most JavaScript (and similar) projects that have a build system rely on a task of concatenating source files in a
@@ -99,7 +101,7 @@ jslink source-js-directory/
 The easiest way to install jslink is from the NPM registry.
 
 ```bash
-npm install jslink
+npm install jslink -g
 ```
 
 jslink can either be installed from NPM repository or this git repository can be cloned. If the repository is cloned,
