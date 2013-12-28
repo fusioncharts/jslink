@@ -1,5 +1,5 @@
 <a href="http://www.fusioncharts.com/"><img src="https://raw.github.com/wiki/fusioncharts/jslink/jslink-logo-64.png" align="right" /></a>
-[![GitHub version][git-badge]](http://badge.fury.io/gh/fusioncharts%2Fjslink)
+[![GitHub version][git-badge]](https://github.com/fusioncharts/jslink)
 [![NPM version][npm-badge]](https://npmjs.org/package/jslink)
 [![Build status][drone-badge]](https://drone.io/github.com/fusioncharts/jslink/latest)
 
