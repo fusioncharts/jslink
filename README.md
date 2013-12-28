@@ -99,10 +99,15 @@ jslink source-js-directory/
 ```
 
 ## Installing jslink
-The easiest way to install jslink is from the NPM registry.
 
 [![npm install jslink -g][npminstall-badge]](https://npmjs.org/package/jslink)
 
+The easiest way to install jslink is from the NPM registry. Intstall [NodeJS][nodejs.org] and run the following command
+on your terminal.
+
+```bash
+npm install jslink -g
+```
 
 jslink can either be installed from NPM repository or this git repository can be cloned. If the repository is cloned,
 there are a few dependencies that needs to be procured. You may easily install them using `npm install -d`.
@@ -257,6 +262,7 @@ entire process will be simulated to check for cyclic dependency and other such e
   group of modules.
 
 [regular-expression]: http://en.wikipedia.org/wiki/Regular_expression
+[nodejs.org]: http://nodejs.org
 [git-badge]: https://badge.fury.io/gh/fusioncharts%2Fjslink.png
 [npm-badge]: https://badge.fury.io/js/jslink.png
 [drone-badge]: https://drone.io/github.com/fusioncharts/jslink/status.png
