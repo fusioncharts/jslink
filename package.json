@@ -45,7 +45,6 @@
   },
 
   "preferGlobal": true,
-  "os" : ["!win32"],
   "bin": {
     "jslink": "src/jslink"
   },
