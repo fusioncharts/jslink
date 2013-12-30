@@ -41,7 +41,7 @@
   },
 
   "scripts": {
-    "test": "jshint src/"
+    "test": "src/bash/test"
   },
 
   "preferGlobal": true,

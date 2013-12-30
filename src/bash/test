@@ -1,0 +1,6 @@
+set -e
+
+jshint src/
+
+src/jslink --version
+src/jslink src/ --test

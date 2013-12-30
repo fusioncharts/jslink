@@ -69,6 +69,12 @@ module.exports = /** @lends module:jslink */ {
             global.jslinkVerbose = true;
         }
 
+        // If the test flag is set to true, we do not initiate export of the files. Though we need to calculate
+        // dependency in order to show results of cyclic errors
+        if (options.test) {
+            cursor.write ("Running in test mode.\n");
+        }
+
         // Notify that the processing started and also keep a note of the time.
         console.time("Preprocessing time");
         cursor.write(".");
@@ -89,10 +95,10 @@ module.exports = /** @lends module:jslink */ {
 
         return this.parse(options, function (error, collection, stat) { // callback for output to console
             cursor.reset().write("\n");
-            if (error || !collection) {
+            if (error) {
                 cursor.red().write((error.message && error.message || error) + "\n");
             }
-            else {
+            else if (collection) {
                 cursor.green()
                 .write(lib.format("{0} with {1} processed for {2}.\n", lib.plural(stat.filesProcessed || 0, "file"),
                     lib.plural(stat.definedModules.length || 0, "module"),
@@ -101,6 +107,7 @@ module.exports = /** @lends module:jslink */ {
             }
             console.timeEnd("Preprocessing time");
             cursor.reset();
+            process.exit(+!!(error || !collection));
         });
     },
 
@@ -142,12 +149,6 @@ module.exports = /** @lends module:jslink */ {
             if (options.exportmap) {
                 moduleIO.writeCollectionToDot(collection, options.exportmap, options.overwrite);
                 cursor.write(".");
-            }
-
-            // If the test flag is set to true, we do not initiate export of the files. Though we need to calculate
-            // dependency in order to show results of cyclic errors
-            if (options.test) {
-                cursor.write ("Running in test mode.\n");
             }
 
             moduleIO.exportCollectionToFS(collection, options.destination, options.overwrite, options.test);
