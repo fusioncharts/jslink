@@ -154,10 +154,39 @@ sources of this project also has the modules and dependency defined. After cloni
 even execute the following command to see `jslink` in action.
 
 ```bash
-./src/jslink tests/structure/bilinear --destination=out/bilinear/ --overwrite
+jslink tests/structure/bilinear --destination=out/bilinear/
 ```
 The output folder should have two files `main.js` and `main.helper.js` as produced from the following dependency map.
 ![sample-jslink-output](https://raw.github.com/wiki/fusioncharts/jslink/jslink-bilinear-sample.png)
+
+### Enabling overwriting of files
+By default `jslink` does not overwrite files and stops with error if it encounters that the output directory already
+contains a file with the same name as it is going to write. To instruct `jslink` to overwrite files, use the
+`--overwrite` switch.
+
+```bash
+jslink tests/structure/bilinear --destination=out/bilinear/ --overwrite
+```
+
+### Processing all sub-directories recursively
+If your source directory contains sub-directories that you want to process recursively, simply enable the `--recursive`
+switch in your commandline parameters. The `tests/structure/fusioncharts` sample has the source files stored in source
+directories.
+
+```bash
+jslink tests/structure/fusioncharts --destination=out/fusioncharts/ --overwrite --recursive
+```
+
+### Adding multiple source directories or individual files as source
+You can provide multiple source directories or even individual files as source. To do this, simply provide the
+references to the files or folders as commandline parameters or use multiple `--source=<fileOrDirectoryPath>`
+parameters.
+
+```bash
+jslink tests/structure/linear tests/structure/bilinear --destination=out/multi/ --overwrite
+# OR
+jslink --source=tests/structure/linear --source=tests/structure/bilinear --destination=out/multi/ --overwrite
+```
 
 ## List of Commandline Options
 
@@ -252,6 +281,7 @@ entire process will be simulated to check for cyclic dependency and other such e
 - Replace sections within comment blocks using external variables, something like {@replace <variable>}
 - Remove @todo blocks and in case the block has other directives, remove only @todo section
 - Hoist @license blocks to top and optionally merge them.
+- Ability to simply copy non-module files from source to target.
 
 ## Technical Notes
 - Whenever any option asks you to provide a directory, if you are not providing `.` or `..`, ensure that you end the
