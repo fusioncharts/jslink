@@ -34,7 +34,8 @@ module.exports = /** @lends module:jslink */ {
         overwrite: false,
         verbose: false,
         help: false,
-        test: false
+        test: false,
+        debug: false
     },
 
     /**
@@ -52,7 +53,7 @@ module.exports = /** @lends module:jslink */ {
         }
         options = lib.fill(options, module.exports.options);
         options = lib.parseJSONBooleans(options, ["recursive", "exportmap", "overwrite", "strict", "verbose", "help",
-            "test"]);
+            "test", "debug"]);
 
         // If version query is sent then ignore all other options
         if (options.version) {
@@ -156,6 +157,9 @@ module.exports = /** @lends module:jslink */ {
         }
         catch (err) {
             error = err;
+            if (options.debug) {
+                throw err;
+            }
         }
 
         /**

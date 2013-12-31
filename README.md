@@ -268,20 +268,21 @@ entire process will be simulated to check for cyclic dependency and other such e
 
 ## Road Ahead
 
-- Solution on Windows platform.
-- Ability to provide a reference set of restrictions in `strict` mode so that build integrity can be enforced.
+- Ability to simply copy non-module files from source to target.
+- Hoist `@license` blocks to top and optionally merge them.
+- Remove `@todo` blocks and in case the block has other directives, remove only `@todo` section.
+- Replace sections within comment blocks using external variables, something like `{@replace <variable>}`.
 - Simple text replacement within comment blocks.
 - Simple text replacement macros.
+- ~~Solution on Windows platform.~~
+- Write extensive test cases.
+- Ability to provide a reference set of restrictions in `strict` mode so that build integrity can be enforced.
 - Ability to output all module graphs without @exports (already implemented, pending proper API decision)
 - Direct image output of graphViz dot files.
 - Ability to do conditional requirement and ignore using `@requiresIf {variable} <module>`, `@requiresIfNot {variable}
 <module>`. Also `@ignoreIf {variable}` and `@ignoreIfNot {variable}`.
 - Add more chatter to verbose output.
 - Have a silent mode
-- Replace sections within comment blocks using external variables, something like {@replace <variable>}
-- Remove @todo blocks and in case the block has other directives, remove only @todo section
-- Hoist @license blocks to top and optionally merge them.
-- Ability to simply copy non-module files from source to target.
 
 ## Technical Notes
 - Whenever any option asks you to provide a directory, if you are not providing `.` or `..`, ensure that you end the

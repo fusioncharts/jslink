@@ -7,24 +7,20 @@
  * @requires collection
  */
 
-var E = "",
-    BLOCK = "Block",
-    ASTERISK = "*",
-    DEFAULT_INCLUDE_PATTERN = /.+\.js$/,
+var DEFAULT_INCLUDE_PATTERN = /.+\.js$/,
     DEFAULT_EXCLUDE_PATTERN = /^$/,
-    DEFAULT_DEFINE_TAG_PATTERN = /\@module\s*([^\@\r\n]*)/ig,
-    DEFAULT_INCLUDE_TAG_PATTERN = /\@requires\s*([^\@\r\n]*)/ig,
-    DEFAULT_EXPORT_TAG_PATTERN = /\@export\s*([^\@\r\n]*)/ig,
     DEFAULT_DOT_FILENAME = "jslink.dot",
     DEFAULT_OUT_DESTINATION = "out/",
+    MODULE_DEFINITION_TAG = "module",
+    DOT = ".",
 
     fs = require("fs"),
     pathUtil = require("path"),
     walkdir = require("walkdir"),
-    esprima = require("esprima"),
     lib = require("./lib.js"),
 
     ModuleCollection = require("./collection.js"),
+    Source = require("./source.js"),
     writeSerializedModules; // function
 
 /**
@@ -76,10 +72,6 @@ module.exports = {
      * @returns {module:collection~ModuleCollection}
      */
     populateCollectionFromFS: function (collection, path, recurse, include, exclude) {
-        var esprimaOptions = { // we define it outside to avoid redefinition in loop.
-                comment: true
-            };
-
         // Ensure the patterns in paremeter are valid regular expression objects.
         !(include instanceof RegExp) && (include = DEFAULT_INCLUDE_PATTERN);
         !(exclude instanceof RegExp) && (exclude = DEFAULT_EXCLUDE_PATTERN);
@@ -102,15 +94,8 @@ module.exports = {
             /*jshint camelcase: true */
         }, function (path, stat) {
             var fileName,
-                comments,
-                comment,
-                module, // to control parsing flow when module is discovered in a block
-                extern, // for creating external modules in dependencyAdder
-                moduleAdder, // function
-                dependencyAdder, // function
-                exportAdder, // function
-                i,
-                ii;
+                source;
+
             // Increment counter of total file processing.
             collection._statFilesTotal++;
 
@@ -127,92 +112,43 @@ module.exports = {
 
             // We increment the error counter here and would decrement later when all goes well.
             collection._statFilesError++;
+            source = new Source(path); // Generate AST.
 
-            // Since parsing might have error, but that needs to be trapped to return error report. Thus, we wrap it
-            // inside a try block.
-            try {
-                // While calling esprima, we set `comments: true` to get the list of comments in code.
-                comments = esprima.parse((fs.readFileSync(path) || E).toString(), esprimaOptions).comments || [];
-            }
-            catch (err) {
-                throw lib.format("{1}\n> {0}", path, err.message);
-            }
-
-            // This function is passed to the replacer function to excavate the module name from the module definition
-            // line and then add it to the collection. This is defined here to avoid overhead of redefinition within a
-            // loop.
-            moduleAdder = function ($glob, $1) {
-                // Extract the value of the token.
-                if ($1 && ($1 = $1.trim())) {
-                    // In case token has been already been defined, we know that it is a repeated module definition
-                    // and warn the same.
-                    if (module) {
-                        throw lib.format("Repeated module definition encountered in single block. " +
-                            "{0} dropped in favour of {1} in {2}", $1, module, fileName);
-                    }
-                    // Only accept the first definition
-                    // store the module name for subsequent use within this loop.
-                    module = collection.add($1, path);
-                }
-            };
-
-            // This function adds dependencies for a module that has been discovered. This is defined here to avoid
-            // repeated definition within loop.
-            dependencyAdder = function ($glob, $1) {
-                // Extract the value of the token.
-                if ($1 && ($1 = $1.trim())) {
+            source.parseDirectives(MODULE_DEFINITION_TAG, function (name) {
+                // This function is passed to the replacer function to excavate the module name from the module
+                // definition line and then add it to the collection.
+                return collection.add(name, path);
+            }, {
+                requires: function (dependency, module) {
+                    var extern;
                     // While adding dependency, check whether it is a third-party external file
-                    if (/^\.?\.\/.*[^\/]$/.test($1)) {
+                    if (/^\.?\.\/.*[^\/]$/.test(dependency)) {
                         // We build the relative path to the dependant module and check if file exists.
                         // Module is anyway defined here!
-                        $1 = pathUtil.join(pathUtil.dirname(module.source), $1);
+                        dependency = pathUtil.join(pathUtil.dirname(module.source), dependency);
 
                         // If the file does not exist, we raise an error.
-                        if (!fs.existsSync($1)) {
-                            throw new Error (lib.format("External module file not found: \"{0}\"", $1));
+                        if (!fs.existsSync(dependency)) {
+                            throw new Error (lib.format("External module file not found: \"{0}\"", dependency));
                         }
 
                         // Now that we have an absolute module file name, we check whether it is already defined. If
                         // not, we do so.
-                        extern = collection.get(pathUtil.relative(".", $1), true);
-                        (!extern.defined()) && extern.define($1);
+                        (!(extern = collection.get(pathUtil.relative(DOT, dependency), true)).defined()) &&
+                            extern.define(dependency);
                         // Set the module name to the relative value so as not to output full path in report.
-                        $1 = pathUtil.relative(".", $1);
+                        dependency = pathUtil.relative(DOT, dependency);
                     }
-                    collection.connect(module, $1);
-                }
-            };
+                    // Connect the modules in collection
+                    collection.connect(module, dependency);
+                },
 
-            // This function searches whether the module definition has any export directive. This is defined here to
-            // avoid repeated definition within loop.
-            exportAdder = function ($glob, $1) {
-                // Extract the value from token.
-                if ($1 && ($1 = $1.trim())) {
-                    module.addExport($1);
+                // This function searches whether the module definition has any export directive. This is defined here
+                // to avoid repeated definition within loop.
+                export: function (exportPath, module) {
+                    module.addExport(exportPath);
                 }
-            };
-
-            // Loop through the comments and process the "Block" types.
-            for (i = 0, ii = comments.length; i < ii; i++) {
-                comment = comments[i];
-                module = undefined; // reset lock for parsing modules
-
-                // Only continue if its a block comment and starts with jsdoc syntax. Also prevet blocks having @ignore
-                // tags from being parsed.
-                if (comment.type !== BLOCK || comment.value.charAt() !== ASTERISK ||
-                    /\@ignore[\@\s\r\n]/ig.test(comment.value)) {
-                    continue;
-                }
-                // Search for a module definition in it.
-                comment.value.replace(DEFAULT_DEFINE_TAG_PATTERN, moduleAdder);
-                // We need to search for dependencies only if a module name has been discovered.
-                if (module) {
-                    // Add @requires
-                    comment.value.replace(DEFAULT_INCLUDE_TAG_PATTERN, dependencyAdder);
-                    // Add @export
-                    comment.value.replace(DEFAULT_EXPORT_TAG_PATTERN, exportAdder);
-                }
-            }
+            });
 
             // Since we have reached here there wasn't any error parsing/reading the file and as such we decrement the
             // counter.
