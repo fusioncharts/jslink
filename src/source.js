@@ -73,13 +73,10 @@ lib.copy(Source.prototype, /** @lends module:source~Source.prototype */ {
     parseDirectives: function (alphaDirective, alphaDirectiveCallback, betaDirectives) {
         var comments = this.ast.comments,
             directiveCache = {},
-            directive,
             alphaParam,
             alphaRouter, // function
             getBetaRouter, // function
-            added, // flag to stop duplicate addition
-            i,
-            ii;
+            added; // flag to stop duplicate addition
 
         // Check whether any beta directive conflicts with alpha
         if (betaDirectives && betaDirectives.hasOwnProperty(alphaDirective)) {
@@ -118,6 +115,7 @@ lib.copy(Source.prototype, /** @lends module:source~Source.prototype */ {
 
         // Apply the directive parsing on each comment block
         comments.forEach(function (comment) {
+            var directive;
             // reset lock for parsing modules in string replace functions
             alphaParam = undefined;
             added = undefined;
