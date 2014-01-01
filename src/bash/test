@@ -4,3 +4,8 @@ jshint src/
 
 src/jslink --version
 src/jslink src/ --test
+
+echo "\njasmine-node"
+jasmine-node --version
+
+jasmine-node tests/

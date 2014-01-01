@@ -27,7 +27,7 @@ module.exports = lib = /** @lends module:lib */ {
      * @returns {string}
      */
     plural: function (num, word) {
-        return num + SPC + (num > 1 && (word += PLURAL_SUFFIX), word);
+        return num + SPC + ((num > 1 || num < -1) && (word += PLURAL_SUFFIX), word);
     },
 
     /**
@@ -55,7 +55,7 @@ module.exports = lib = /** @lends module:lib */ {
      */
     stringLike: function (str) {
         // Module name has to be valid and cannot be blank.
-        if (!(str && typeof str.toString === FUNCTION)) {
+        if (!(str ? typeof str.toString === FUNCTION : typeof str === STRING)) {
             throw new TypeError("Not a valid string: " + str);
         }
         // Sanitise the name for further processing - like trim it!
@@ -182,6 +182,81 @@ module.exports = lib = /** @lends module:lib */ {
             });
         }
         return obj;
+    },
+
+    /**
+     * Caches function call returns
+     * @param {[type]} f [description]
+     * @param {[type]} scope [description]
+     * @returns {[type]} [description]
+     */
+    cacher: function (f, scope) {
+        function cachedfunction() {
+            var arg = Array.prototype.slice.call(arguments, 0),
+                args = arg.join("\u2400"),
+                cache = cachedfunction.cache = cachedfunction.cache || {},
+                count = cachedfunction.count = cachedfunction.count || [],
+                i,
+                ii;
+
+            if (cache.hasOwnProperty(args)) {
+                for (i = 0, ii = count.length; i < ii; i++) {
+                    if (count[i] === args) {
+                        return count.push(count.splice(i, 1)[0]);
+                    }
+                }
+                return cache[args];
+            }
+            count.length >= 1e3 && delete cache[count.shift()];
+            count.push(args);
+            cache[args] = f.apply(scope, arg);
+            return cache[args];
+        }
+        return cachedfunction;
+    },
+
+    /**
+     * Generate a directive parsing Regular Expression from a directive name
+     *
+     * @param {string} directive
+     * @returns {RegExp}
+     */
+    getDirectivePattern: function (directive) {
+        return new RegExp(lib.format("\\@{0}\\s*([^\\@\\r\\n]*)", directive), "ig");
+    },
+
+    /**
+     * Returns the keys of an object in a specific order and optionally filtered by a type.
+     *
+     * @param {[object} object
+     * @param {Array<string>} reference
+     * @param {RegExp=} [type]
+     * @returns {Array}
+     */
+    orderedKeys: function (object, reference, type) {
+        var order = [],
+            flag = {};
+
+        // If there is no object, there is no order!
+        if (typeof object !== OBJECT) {
+            throw new Error("Cannot prepare ordered key for non-object variables.");
+        }
+
+        // Validate type parameter
+        if (!type || type.test !== FUNCTION) {
+            type = /./g;
+        }
+
+        // Concatenate object keys and reference. Reference first and the prepare the final order array.
+        ([].concat(reference).concat(Object.keys(object))).map(function (key) {
+            // add to the order only if not duplicate and exists in object
+            if (object.hasOwnProperty(key) && !flag[key] && type.test(typeof object[key])) {
+                this.push(key);
+                flag[key] = true;
+            }
+        }, order);
+
+        return order;
     },
 
     /**
