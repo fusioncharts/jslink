@@ -17,11 +17,12 @@ module.exports = {
     directives: {
         // This function is passed to the replacer function to excavate the module name from the module
         // definition line and then add it to the collection.
-        module: function (ns, name) {
+        "module": function (ns, name) {
             return this.collection.add(name, this.path);
         },
 
-        requires: function (ns, dependency) {
+        // Adds dependency relations.
+        "requires": function (ns, dependency) {
             var extern;
 
             // If module was not parsed, no need to proceed.
@@ -53,7 +54,7 @@ module.exports = {
 
         // This function searches whether the module definition has any export directive. This is defined here
         // to avoid repeated definition within loop.
-        export: function (ns, exportPath) {
+        "export": function (ns, exportPath) {
             ns.module && ns.module.addExport(exportPath);
         }
     }
