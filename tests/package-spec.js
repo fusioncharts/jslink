@@ -34,7 +34,7 @@ describe ("package.json", function () {
         });
 
         it ("must have a valid version string valid semantic version format", function () {
-            expect(json.version).toMatch(/^((\d+)\.(\d+)\.(\d+))(?:-([\dA-Za-z\-]+(?:\.[\dA-Za-z\-]+)*))?(?:\+([\dA-Za-z\-]+(?:\.[\dA-Za-z\-]+)*))?$/);
+            expect(json.version).toMatchSemVer();
         });
 
         it ("should prefer global", function () {

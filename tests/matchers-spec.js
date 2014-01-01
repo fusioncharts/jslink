@@ -5,6 +5,11 @@ var matchers = {
 
     toBeJSONEquals: function (refJSON) {
         return (JSON.stringify(this.actual) === JSON.stringify(refJSON));
+    },
+
+    toMatchSemVer: function () {
+        return !!(this.actual && this.actual.toString &&
+            this.actual.toString().match(/^((\d+)\.(\d+)\.(\d+))(?:-([\dA-Za-z\-]+(?:\.[\dA-Za-z\-]+)*))?(?:\+([\dA-Za-z\-]+(?:\.[\dA-Za-z\-]+)*))?$/));
     }
 };
 
