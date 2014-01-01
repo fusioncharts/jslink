@@ -8,6 +8,7 @@
 var E = "",
     BLOCK = "Block",
     ASTERISK = "*",
+    SPC = " ",
 
     lib = require("./lib.js"),
     fs = require("fs"),
@@ -16,19 +17,13 @@ var E = "",
         comment: true,
         range: true
     },
-    /**
-     * Generate a directive parsing Regular Expression.
-     *
-     * @param {string} directive
-     * @returns {RegExp}
-     */
-    getDirectivePattern = function (directive) {
-        return new RegExp(lib.format("\\@{0}\\s*([^\\@\\r\\n]*)", directive), "ig");
-    },
     Source; // constructor
 
 
 /**
+ * The class allows parsing of Mozilla compatible AST from a source file and then perform operations on the tree as a
+ * part of process, verification or for output.
+ *
  * @constructor
  * @param {string} path
  */
@@ -63,79 +58,41 @@ lib.copy(Source.prototype, /** @lends module:source~Source.prototype */ {
         return this.path;
     },
 
-    /**
-     * Parses the directives from the codes AST
-     *
-     * @param {string} alphaDirective
-     * @param {function} alphaDirectiveCallback
-     * @param {object<function>} betaDirectives
-     */
-    parseDirectives: function (alphaDirective, alphaDirectiveCallback, betaDirectives) {
-        var comments = this.ast.comments,
-            directiveCache = {},
-            alphaParam,
-            alphaRouter, // function
-            getBetaRouter, // function
-            added; // flag to stop duplicate addition
+    parseDirectives: function (directives, order, scope) {
+        var comments = this.ast && this.ast.comments || [];
 
-        // Check whether any beta directive conflicts with alpha
-        if (betaDirectives && betaDirectives.hasOwnProperty(alphaDirective)) {
-            throw lib.format("Conflicting alpha and beta directives: {0}", alphaDirective);
-        }
+        // If the order is not specified or parially specified, then create one. This is the order of parsing the
+        // directives.
+        order = lib.orderedKeys(directives, Array.isArray(order) ? order : [], (/^function$/));
 
-        // This function is passed to the replacer function to excavate the module name from the module definition
-        // line and then add it to the collection. This is defined here to avoid overhead of redefinition within a
-        // loop.
-        alphaRouter = function ($glob, $1) {
-            // Extract the value of the token.
-            if ($1 && ($1 = $1.trim())) {
-                // In case token has been already been defined, we know that it is a repeated module definition
-                // and warn the same.
-                if (added) {
-                    throw lib.format("Repeated module definition encountered in single block. " +
-                        "{0} dropped in favour of {1}", $1, added);
-                }
-                // Only accept the first definition
-                // store the module name for subsequent use within this loop.
-                /** @todo document that callback return values reused for discovery and export) */
-                alphaParam = alphaDirectiveCallback(added = $1);
-            }
-        };
-
-        // This function adds dependencies for a module that has been discovered. This is defined here to avoid
-        // repeated definition within loop.
-        getBetaRouter = function (directive) {
-            return (directiveCache[directive] || (directiveCache[directive] = function ($glob, $1) {
-                // Extract the value of the token.
-                if ($1 && ($1 = $1.trim())) {
-                    betaDirectives[directive]($1, alphaParam); /** @todo document */
-                }
-            }));
-        };
-
-        // Apply the directive parsing on each comment block
         comments.forEach(function (comment) {
-            var directive;
-            // reset lock for parsing modules in string replace functions
-            alphaParam = undefined;
-            added = undefined;
-
+            var returns = [{}]; // we store it as array of object so that it can be concatenated with arguments
             // Only continue if its a block comment and starts with jsdoc syntax. Also prevet blocks having @ignore
             // tags from being parsed.
             if (comment.type !== BLOCK || comment.value.charAt() !== ASTERISK ||
                 /\@ignore[\@\s\r\n]/ig.test(comment.value)) {
                 return;
             }
-            // Search for a module definition in it.
-            comment.value.replace(getDirectivePattern(alphaDirective), alphaRouter);
-            // We need to search for dependencies only if a module name has been discovered.
-            if (added) {
-                for (directive in betaDirectives) {
-                    comment.value.replace(getDirectivePattern(directive), getBetaRouter(directive));
-                }
-            }
-        });
 
+            // Pass the directives in given order
+            order.forEach(function (directive) {
+                var tokens = directive.split(SPC), // split the token to extract the directives
+                    name = tokens[0], // get the first token constant as name
+                    evaluator = directives[name]; // fetch the directive parser
+
+                // Call the directive replacer function and then pass the evaluator via a router
+                comment.value.replace(lib.getDirectivePattern(name), (function () {
+                    return function ($glob, $1) {
+                        if ($1 && ($1 = $1.trim())) {
+                            // Execute the evaluator in the specified scope and send it a very specific argument set
+                            // 1: namespace, 2+: all the specific matches of the name pattern
+                            returns[0][name] = evaluator.apply(scope,
+                                returns.concat(Array.prototype.slice.call(arguments, 1, -2)));
+                        }
+                    };
+                }())); // end comment replacer callback
+            }); // end order forEach
+        }); // end comment forEach
     }
 });
 

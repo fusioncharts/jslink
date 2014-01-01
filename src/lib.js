@@ -216,6 +216,50 @@ module.exports = lib = /** @lends module:lib */ {
     },
 
     /**
+     * Generate a directive parsing Regular Expression from a directive name
+     *
+     * @param {string} directive
+     * @returns {RegExp}
+     */
+    getDirectivePattern: function (directive) {
+        return new RegExp(lib.format("\\@{0}\\s*([^\\@\\r\\n]*)", directive), "ig");
+    },
+
+    /**
+     * Returns the keys of an object in a specific order and optionally filtered by a type.
+     *
+     * @param {[object} object
+     * @param {Array<string>} reference
+     * @param {RegExp=} [type]
+     * @returns {Array}
+     */
+    orderedKeys: function (object, reference, type) {
+        var order = [],
+            flag = {};
+
+        // If there is no object, there is no order!
+        if (typeof object !== OBJECT) {
+            throw new Error("Cannot prepare ordered key for non-object variables.");
+        }
+
+        // Validate type parameter
+        if (!type || type.test !== FUNCTION) {
+            type = /./g;
+        }
+
+        // Concatenate object keys and reference. Reference first and the prepare the final order array.
+        ([].concat(reference).concat(Object.keys(object))).map(function (key) {
+            // add to the order only if not duplicate and exists in object
+            if (object.hasOwnProperty(key) && !flag[key] && type.test(typeof object[key])) {
+                this.push(key);
+                flag[key] = true;
+            }
+        }, order);
+
+        return order;
+    },
+
+    /**
      * Procures a writeable file.
      *
      * @param {string} path

@@ -108,6 +108,10 @@ module.exports = /** @lends module:jslink */ {
             }
             console.timeEnd("Preprocessing time");
             cursor.reset();
+            // throw error in console for debug mode so that call stack/trace is visible.
+            if (options.debug && error) {
+                throw error;
+            }
             process.exit(+!!(error || !collection));
         });
     },
@@ -157,9 +161,6 @@ module.exports = /** @lends module:jslink */ {
         }
         catch (err) {
             error = err;
-            if (options.debug) {
-                throw err;
-            }
         }
 
         /**

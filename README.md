@@ -207,6 +207,8 @@ of commandline parameters that can be used to configure jslink.
 `--help`            |Outputs the usage help text to terminal
 `--version`         |Shows the jslink version being used
 
+> You can also use `man jslink` to refer to this table from terminal
+
 #### `--destination=<output-directory>`
 By default, jslink outputs the files in `out/` folder of the current working directory. This can be changed using this
 parameter. Specifying `jslink source-js-directory/ --destination=concat/source/` will cause jslink to store all output
