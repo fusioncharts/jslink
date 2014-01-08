@@ -5,10 +5,21 @@
  *
  * @requires lib
  */
-var lib = require("./lib.js"),
-    ModuleCollection,
-    collectionTopoSort,
-    collectionAdjacencyIndex;
+var BLOCK = "Block",
+    ASTERISK = "*",
+    SPC = " ",
+
+    lib = require("./lib.js"),
+    fs = require("fs"),
+    esprima = require("esprima"),
+
+    esprimaOptions = {
+        comment: true,
+        range: true
+    },
+    ModuleCollection, // constructor
+    collectionTopoSort, // helper function
+    collectionAdjacencyIndex; // helper function
 
 /**
  * This function recursively traverses through modules (vertices of a DAG) and pushes them to a stack in a neatly sorted
@@ -116,25 +127,54 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
     },
 
     /**
-     * Gets a node by it's source file name.
+     * Gets nodes by it's source file name.
+     *
+     * @param {string} source
+     * @returns {Object<module:collection~ModuleCollection.Source>}
+     */
+    getSource: function (source) {
+        if (!this.sources[lib.stringLike(source)]) {
+            throw new Error("Source not defined: " + source);
+        }
+
+        return this.sources[source];
+    },
+
+    /**
+     * Gets nodes by it's source file name.
      *
      * @param {string} source
      * @returns {Object<module:collection~ModuleCollection.Module>}
      */
     getBySource: function (source) {
-        return this.sources[source];
+        return this.getSource(source).modules;
     },
 
     /**
      * Add a new module to the collection
      *
      * @param {string} name
-     * @param {string} source
+     * @param {module:collection~ModuleCollection.Source} source
      * @returns {module:collection~ModuleCollection.Module}
      */
-    add: function (name, source) {
-        return ((this.sources[(this._recentModule = this.get(name, true).define(source)).source] ||
-            (this.sources[this._recentModule] = {}))[this._recentModule.source] = this._recentModule);
+    addModule: function (name, source) {
+        if (!(source = this.getSource(source))) {
+            throw new Error("Source not predefined for module: " + name);
+        }
+
+        return this.get(name, true).define(source);
+    },
+
+    /**
+     * Add a source file to the collection
+     * @param {string} path
+     * @param {module:collection~ModuleCollection.Module=} [module]
+     * @return {module:collection~ModuleCollection.Source}
+     */
+    addSource: function (path, module) {
+        return (module && this.get(module, true).define(new ModuleCollection.Source(path)).source) ||
+            (this.sources[path] || (this.sources[path] = new ModuleCollection.Source(path)));
+
     },
 
     /**
@@ -177,7 +217,7 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
 
         // Clone the sources
         for (item in this.modules) {
-            clone.add(this.modules[item].clone(), this.modules[item].source);
+            clone.addModule(this.modules[item].clone(), this.modules[item].source);
         }
 
         // filter out and add the vertices that are defined at both ends.
@@ -354,7 +394,7 @@ ModuleCollection.Module = function (name, source) {
     /**
      * The source file path that defines this module. This is to be used as a getter and should be set using the
      * {@link module:collection~ModuleCollection.Module#define} method.
-     * @type {string}
+     * @type {module:collection~ModuleCollection.Source}
      * @readOnly
      */
     this.source = undefined;
@@ -377,7 +417,10 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
             throw lib.format("Duplicate definition of {0} at: {1}\n\nAlready defined by {2}", this.name, source,
                 this.source);
         }
-        this.source = lib.stringLike(source); // store
+        if (!(source instanceof ModuleCollection.Source)) {
+            throw "Definition accepts instance of ModuleCollection.Source only.";
+        }
+        this.source = source; // store
         return this; // chain
     },
 
@@ -406,7 +449,7 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
      * @returns {boolean}
      */
     defined: function () {
-        return this.source !== undefined;
+        return (this.source instanceof ModuleCollection.Source);
     },
 
     /**
@@ -445,6 +488,139 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
 
     toString: function () {
         return this.name;
+    }
+});
+
+/**
+ * The class allows parsing of Mozilla compatible AST from a source file and then perform operations on the tree as a
+ * part of process, verification or for output.
+ *
+ * @constructor
+ * @param {string} path
+ */
+ModuleCollection.Source = function (path) {
+    /**
+     * Stores the path of the source
+     * @type {string}
+     */
+    this.path = path;
+
+    // Since parsing might have error, but that needs to be trapped to return error report. Thus, we wrap it
+    // inside a try block.
+    try {
+        /**
+         * Raw data of the source file.
+         *
+         * @type {string}
+         */
+        this.raw = fs.readFileSync(path);
+    }
+    catch (err) {
+        throw new Error(lib.format("{1}\n> {0}", path, err.message));
+    }
+
+    /**
+     * The ESPrima parsed source tree for this source.
+     * @type {object}
+     */
+    this.ast = {
+        comments: [],
+        stub: true
+    };
+};
+
+/**
+ * @constructor
+ * @param {string} definition
+ * @param {function} evaluator
+ */
+ModuleCollection.Source.Directive = function (definition, evaluator) {
+    /**
+     * @type {string}
+     */
+    this.definition = definition;
+    /**
+     * @type {function}
+     */
+    this.evaluator = evaluator;
+    /**
+     * @type {string}
+     */
+    this.name = definition.split(SPC)[0];
+    /**
+     * @type {RegExp}
+     */
+    this.pattern = lib.getDirectivePattern(this.name);
+};
+
+lib.copy(ModuleCollection.Source, /** @lends module:collection~ModuleCollection.Source */ {
+    /**
+     * @type {Array<Source.Directive>}
+     */
+    directives: [],
+
+    /**
+     * @param {string} definition
+     * @param {function} evaluator
+     */
+    addDirective: function (definition, evaluator) {
+        if (typeof evaluator !== "function") {
+            throw "Directive evaluator cannot be not a function!";
+        }
+        this.directives.push(new this.Directive(definition, evaluator));
+    },
+
+    /**
+     * @param {object<Source.Directive>} directives
+     */
+    addDirectives: function (directives) {
+        for (var definition in directives) {
+            this.addDirective(definition, directives[definition]);
+        }
+    }
+});
+
+lib.copy(ModuleCollection.Source.prototype, /** @lends module:collection~ModuleCollection.Source.prototype */ {
+    toString: function () {
+        return this.path;
+    },
+
+    /**
+     * @returns {object}
+     */
+    tree: function () {
+        return this.ast.stub && (this.ast = esprima.parse(this.raw.toString(), esprimaOptions)) || this.ast;
+    },
+
+    /**
+     * @param {Object=} scope
+     */
+    parse: function (ns) {
+        var source = this;
+
+        this.tree().comments.forEach(function (comment) {
+            var returns = [ns, {}]; // we store it as array of object so that it can be concatenated with arguments
+
+            // Only continue if its a block comment and starts with jsdoc syntax. Also prevet blocks having @ignore
+            // tags from being parsed.
+            if (comment.type !== BLOCK || comment.value.charAt() !== ASTERISK ||
+                /\@ignore[\@\s\r\n]/ig.test(comment.value)) {
+                return;
+            }
+
+            // Pass the directives in given order
+            ModuleCollection.Source.directives.forEach(function (directive) {
+                // Call the directive replacer function and then pass the evaluator via a router
+                comment.value.replace(directive.pattern, (function () {
+                    return function ($glob, $1) {
+                        // Execute the evaluator in the source scope and send it a very specific argument set
+                        // 1: namespace, 2+: all the specific matches of the name pattern
+                        ($1 && ($1 = $1.trim())) && (returns[1][directive.name] = directive.evaluator.apply(source,
+                                returns.concat(Array.prototype.slice.call(arguments, 1, -2))));
+                    };
+                }())); // end comment replacer callback
+            }); // end order forEach
+        }); // end comment forEach
     }
 });
 

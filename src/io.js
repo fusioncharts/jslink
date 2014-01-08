@@ -20,8 +20,10 @@ var DEFAULT_INCLUDE_PATTERN = /.+\.js$/,
     parsers = require("./parsers.js"),
 
     ModuleCollection = require("./collection.js"),
-    Source = require("./source.js"),
     writeSerializedModules; // function
+
+// Add the directives to the Source processor
+ModuleCollection.Source.addDirectives(parsers.directives);
 
 /**
  * Writes a 2d array of modules to a set of files with the module source contents.
@@ -42,8 +44,8 @@ writeSerializedModules = function (matrix, destination, overwrite) {
     }
 
     // Adds the content of source file to target file.
-    appendSource = function (sourceFileName) {
-        fs.appendFileSync(this[0], fs.readFileSync(sourceFileName));
+    appendSource = function (source) {
+        fs.appendFileSync(this[0], source.raw);
     };
 
     // Create or empty the file name from the bunch of targets.
@@ -93,8 +95,7 @@ module.exports = {
             no_recurse: !recurse
             /*jshint camelcase: true */
         }, function (path, stat) {
-            var fileName,
-                source;
+            var fileName;
 
             // Increment counter of total file processing.
             collection._statFilesTotal++;
@@ -112,12 +113,7 @@ module.exports = {
 
             // We increment the error counter here and would decrement later when all goes well.
             collection._statFilesError++;
-            source = new Source(path); // Generate AST.
-
-            source.parseDirectives(parsers.directives, parsers.order, {
-                path: path,
-                collection: collection
-            });
+            collection.addSource(path).parse(collection);
 
             // Since we have reached here there wasn't any error parsing/reading the file and as such we decrement the
             // counter.

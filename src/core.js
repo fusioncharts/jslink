@@ -146,8 +146,8 @@ module.exports = /** @lends module:jslink */ {
 
             if (options.strict) {
                 if (stat.orphanModules.length) {
-                    throw lib.format("{0} detected under strict mode.\n- {1}", lib.plural(stat.orphanModules.length,
-                        "orphan module"), stat.orphanModules.join("\n- "));
+                    throw new Error(lib.format("{0} detected under strict mode.\n- {1}",
+                        lib.plural(stat.orphanModules.length, "orphan module"), stat.orphanModules.join("\n- ")));
                 }
             }
 

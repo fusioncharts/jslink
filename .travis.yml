@@ -6,4 +6,5 @@ node_js:
 
 branches:
  only:
-  "master"
+  - /^master$/
+  - /^release\/.*$/
