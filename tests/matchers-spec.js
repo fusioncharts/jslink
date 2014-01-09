@@ -1,3 +1,9 @@
+/**
+ * @fileOverview
+ * Contains all the global jasmine matchers that we require to run the specs.
+ */
+
+/* global beforeEach */
 var matchers = {
     toBeOfType: function (typeName) {
         return ((typeof this.actual) == typeName);

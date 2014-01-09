@@ -1,3 +1,9 @@
+/**
+ * @fileOverview
+ * This file contains all test specs for the library functions of this tool.
+ */
+
+/* global describe, it, expect */
 describe("library module", function () {
     var lib = require("../src/lib.js");
 
@@ -65,7 +71,7 @@ describe("library module", function () {
             expect(lib.stringLike("test  ")).toBe("test");
             expect(lib.stringLike(" test ")).toBe("test");
             expect(lib.stringLike("  test  ")).toBe("test");
-        })
+        });
     });
 
 });
