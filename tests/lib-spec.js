@@ -354,7 +354,7 @@ describe("library module", function () {
                 cachedSum;
 
             sum = function(a, b) {
-                sum.callCount = sum.callCount++ || 1;
+                sum.callCount = ++sum.callCount || 1;
 
                 return a + b;
             };
@@ -363,8 +363,10 @@ describe("library module", function () {
 
             expect(cachedSum(3, 4)).toBe(7);
             expect(sum.callCount).toBe(1);
+            expect(cachedSum(3, 5)).toBe(8);
+            expect(sum.callCount).toBe(2);
             expect(cachedSum(3, 4)).toBe(7);
-            expect(sum.callCount).toBe(1);
+            expect(sum.callCount).toBe(2);
 
         });
 
@@ -405,5 +407,27 @@ describe("library module", function () {
 
         });
 
+        it ("calling the function with same args after 1e3 distinct arg calls should invoke the function again", function () {
+            var sum,
+                cachedSum;
+
+            sum = function(a, b) {
+                sum.callCount = ++sum.callCount || 1;
+
+                return a + b;
+            };
+
+            cachedSum = lib.cacher(sum, sum);
+            cachedSum(3, 4);
+
+            for (var i = 4, j = 5, k = 0; k < 1e3; i++, j++, k++ )
+            {
+                cachedSum(i, j);
+            }
+
+            expect(cachedSum(3, 4)).toBe(7);
+            expect(sum.callCount).toBe(1e3 + 2);
+
+        });
     });
 });
