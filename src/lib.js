@@ -166,16 +166,16 @@ module.exports = lib = /** @lends module:lib */ {
     },
 
     /**
-     * Iterate over an object and convert all string booleans into native boolean values.
+     * Iterate over an object and convert all string properties of the object into native boolean values.
      *
      * @param {object} obj
-     * @param {Array} booleans
+     * @param {Array} properties
      * @returns {object}
      */
-    parseJSONBooleans: function (obj, booleans) {
+    parseJSONBooleans: function (obj, properties) {
         // Check whether parameters are valid
-        if ((typeof obj === OBJECT) && Array.isArray(booleans) && booleans.length) {
-            booleans.forEach(function (prop) {
+        if ((typeof obj === OBJECT) && Array.isArray(properties) && properties.length) {
+            properties.forEach(function (prop) {
                 if (obj.hasOwnProperty(prop)) {
                     obj[prop] = (/\s*true\s*/ig.test(obj[prop]));
                 }
@@ -202,7 +202,7 @@ module.exports = lib = /** @lends module:lib */ {
             if (cache.hasOwnProperty(args)) {
                 for (i = 0, ii = count.length; i < ii; i++) {
                     if (count[i] === args) {
-                        return count.push(count.splice(i, 1)[0]);
+                        count.push(count.splice(i, 1)[0]);
                     }
                 }
                 return cache[args];
