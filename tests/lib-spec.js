@@ -124,32 +124,6 @@ describe("library module", function () {
             expect(lib.copy).toBeOfType("function");
         });
         
-        it("must throw an error in case sink is not a valid object", function() {
-            expect(function () {
-                lib.copy(null, {});
-            }).toThrow(new TypeError("Not a valid Object"));
-
-            expect(function () {
-                lib.copy(undefined, {});
-            }).toThrow(new TypeError("Not a valid Object"));
-
-            expect(function () {
-                lib.copy(NaN, {});
-            }).toThrow(new TypeError("Not a valid Object"));
-
-            expect(function () {
-                lib.copy(5, {});
-            }).toThrow(new TypeError("Not a valid Object"));
-
-            expect(function () {
-                lib.copy("", {});
-            }).toThrow(new TypeError("Not a valid Object"));
-
-            expect(function () {
-                lib.copy(true, {});
-            }).toThrow(new TypeError("Not a valid Object"));
-        });
-
         it("Every property from source to sink must have been copied", function() {
             var sink,
                 source;
@@ -367,43 +341,6 @@ describe("library module", function () {
             expect(sum.callCount).toBe(2);
             expect(cachedSum(3, 4)).toBe(7);
             expect(sum.callCount).toBe(2);
-
-        });
-
-        it ("A function to be cached with Objects as arguments ", function() {
-            var fn,
-                cachedFn;
-
-            /**
-            * fn counts the own properties of obj
-            */
-            fn = function(obj) {
-                var count = 0;
-
-                fn.callCount = fn.callCount++ || 1;
-                for(var key in obj) {
-                    if (obj.hasOwnProperty(key))
-                    {
-                        count++;  
-                    }
-                }
-
-                return count;
-            };
-
-            cachedFn = lib.cacher(fn, fn);
-
-            expect(cachedFn({
-                a: 1,
-                b: 2
-            })).toBe(2);
-            expect(fn.callCount).toBe(1);
-            expect(cachedFn({
-                a: 1,
-                b: 2,
-                c: 3
-            })).toBe(3);
-            expect(fn.callCount).toBe(2);
 
         });
 

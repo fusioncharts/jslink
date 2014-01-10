@@ -177,7 +177,7 @@ module.exports = lib = /** @lends module:lib */ {
         if ((typeof obj === OBJECT) && Array.isArray(properties) && properties.length) {
             properties.forEach(function (prop) {
                 if (obj.hasOwnProperty(prop)) {
-                    obj[prop] = (/\s*true\s*/ig.test(obj[prop]));
+                    obj[prop] = !(/^\s*false\s*$/ig.test(obj[prop]));
                 }
             });
         }
@@ -186,9 +186,9 @@ module.exports = lib = /** @lends module:lib */ {
 
     /**
      * Caches function call returns
-     * @param {[type]} f [description]
-     * @param {[type]} scope [description]
-     * @returns {[type]} [description]
+     * @param {[type]} f function whose arguments cannot contain Objects and the return value is dependent on the arguments
+     * @param {[type]} scope the scope in which the function should be executed
+     * @returns {[type]} a cached function f which returns the cached value for same arguments
      */
     cacher: function (f, scope) {
         function cachedfunction() {
