@@ -344,7 +344,7 @@ describe("library module", function () {
 
         });
 
-        it ("calling the function with same args after 1e3 distinct arg calls should invoke the function again", function () {
+        it ("calling the function with same args after 1e3 distinct arg calls should invoke the function again to make sure cache is being busted", function () {
             var sum,
                 cachedSum;
 
@@ -366,5 +366,75 @@ describe("library module", function () {
             expect(sum.callCount).toBe(1e3 + 2);
 
         });
+    });
+
+    describe("lib.orderedKeys", function () {
+        it ("lib.orderedKeys must be a function", function () {
+            expect(lib.orderedKeys).toBeOfType("function");
+        });
+
+        it ("Must throw an error when object is not passed for orderedKeys", function () {
+            expect(function () {
+                lib.orderedKeys("");
+            }).toThrow(new Error("Cannot prepare ordered key for non-object variables."));
+
+            expect(function () {
+                lib.orderedKeys(5);
+            }).toThrow(new Error("Cannot prepare ordered key for non-object variables."));
+
+            expect(function () {
+                lib.orderedKeys(true);
+            }).toThrow(new Error("Cannot prepare ordered key for non-object variables."));
+
+            expect(function () {
+                lib.orderedKeys(undefined);
+            }).toThrow(new Error("Cannot prepare ordered key for non-object variables."));
+
+            expect(function () {
+                lib.orderedKeys(null);
+            }).toThrow(new Error("Cannot prepare ordered key for non-object variables."));
+        });
+
+        it("Must not fail in case type is not a regular expression or not passed", function () {
+            expect(lib.orderedKeys({ 
+                a: 1
+            }, ["a", "b"])).toEqual(["a"]);
+
+            expect(lib.orderedKeys({ 
+                a: 1
+            }, ["a", "b"], "a")).toEqual(["a"]);            
+        });
+
+        it("Must return the properties in the reference order", function () {
+            expect(lib.orderedKeys({ 
+                a: 1
+            }, ["a", "b"])).toEqual(["a"]);
+
+            expect(lib.orderedKeys({ 
+                a: 1,
+                b: false
+            }, ["a", "b"])).toEqual(["a", "b"]);
+
+            expect(lib.orderedKeys({ 
+                a: 1,
+                b: false,
+                c: function () {}
+            }, ["a", "c", "b"])).toEqual(["a", "c", "b"]);
+        });
+
+        it("must return those properties which are of the passed type", function () {
+            expect(lib.orderedKeys({ 
+                a: 1,
+                b: false,
+                c: function () {}
+            }, ["a", "c", "b"], /^function$/)).toEqual(["c"]);
+
+            expect(lib.orderedKeys({ 
+                a: 1,
+                b: false,
+                c: function () {}
+            }, ["a", "c", "b"], /^function|boolean$/)).toEqual(["c", "b"]);
+        });
+
     });
 });
