@@ -203,6 +203,7 @@ module.exports = lib = /** @lends module:lib */ {
                 for (i = 0, ii = count.length; i < ii; i++) {
                     if (count[i] === args) {
                         count.push(count.splice(i, 1)[0]);
+                        break;
                     }
                 }
                 return cache[args];
