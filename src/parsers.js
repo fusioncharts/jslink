@@ -3,7 +3,8 @@
  * @requires  lib
  */
 
-var DOT = ".",
+var E = "",
+    DOT = ".",
     pathUtil = require("path"),
     fs = require("fs"),
     lib = require("./lib.js");
@@ -55,6 +56,29 @@ module.exports = {
         // to avoid repeated definition within loop.
         "export": function (collection, args, exportPath) {
             args.module && args.module.addExport(exportPath);
+        }
+    },
+
+    processors: {
+        "removeblock": function () {
+            var blankArray = [],
+                tag,
+                i,
+                ii;
+
+            for (i = 0, ii = arguments.length; i < ii; i++) {
+                tag = arguments[i];
+                if (typeof tag !== "string") {
+                    throw new TypeError("removeblock parameter expects a tag name");
+                }
+
+                // If the block is matched, then we remove it from content.
+                if (lib.getDirectivePattern(tag).test(this.comment.value)) {
+                    lib.fillStringArray(this.content, blankArray, this.comment.range, E);
+                    lib.trimStringArray(this.content, this.comment.range); // trim
+                }
+
+            }
         }
     }
 };

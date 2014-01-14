@@ -79,6 +79,12 @@ describe("library module", function () {
         });
     });
 
+    describe("lib.fillStringArray()", function () {
+        it ("must be a function", function () {
+            expect(lib.fillStringArray).toBeOfType("function");
+        });
+    });
+
     describe("`lib.stringLike", function () {
         it ("must exist", function () {
             expect(lib.stringLike).toBeOfType("function");
@@ -370,6 +376,46 @@ describe("library module", function () {
             expect(cachedSum(3, 4)).toBe(7);
             expect(sum.callCount).toBe(1e3 + 2);
 
+        });
+    });
+
+    describe("lib.isJSDocBlock", function () {
+
+        it("must be a function", function () {
+            expect(lib.isJSDocBlock).toBeOfType("function");
+        });
+
+        it ("must return true when jsdoc-style block comment is passed", function () {
+            expect(lib.isJSDocBlock({
+                type: "Block",
+                value: "*"
+            })).toBeTruthy();
+        });
+
+        it ("must return false if @ignore directive is provided in jsdoc-style block", function() {
+            expect(lib.isJSDocBlock({
+                type: "Block",
+                value: "* @ignore"
+            })).not.toBeTruthy();
+        });
+
+        it ("must return true if @ignore directive is provided and `ignoreIgnore` flag is set to true", function() {
+            expect(lib.isJSDocBlock({
+                type: "Block",
+                value: "* @ignore"
+            }, true)).toBeTruthy();
+        });
+
+        it ("must not accept non-jsdoc style comment", function() {
+            expect(lib.isJSDocBlock({
+                type: "Block",
+                value: "voila!"
+            })).not.toBeTruthy();
+
+            expect(lib.isJSDocBlock({
+                type: "Line",
+                value: "* voila!"
+            })).not.toBeTruthy();
         });
     });
 });

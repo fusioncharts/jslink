@@ -156,6 +156,10 @@ module.exports = /** @lends module:jslink */ {
                 cursor.write(".");
             }
 
+
+            moduleIO.processCollectionSources(collection, options);
+            cursor.write(".");
+
             moduleIO.exportCollectionToFS(collection, options.destination, options.overwrite, options.test);
             cursor.write(".");
         }

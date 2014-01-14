@@ -5,9 +5,8 @@
  *
  * @requires lib
  */
-var BLOCK = "Block",
-    ASTERISK = "*",
-    SPC = " ",
+var SPC = " ",
+    E = "",
 
     lib = require("./lib.js"),
     fs = require("fs"),
@@ -553,11 +552,36 @@ ModuleCollection.Source.Directive = function (definition, evaluator) {
     this.pattern = lib.getDirectivePattern(this.name);
 };
 
+/**
+ * @constructor
+ * @param {string} definition
+ * @param {function} evaluator
+ */
+ModuleCollection.Source.Processor = function (definition, evaluator) {
+    /**
+     * @type {string}
+     */
+    this.name = definition;
+    /**
+     * @type {function}
+     */
+    this.evaluator = evaluator;
+    /**
+     * @type {string}
+     */
+    this.name = definition.split(SPC)[0];
+};
+
 lib.copy(ModuleCollection.Source, /** @lends module:collection~ModuleCollection.Source */ {
     /**
-     * @type {Array<Source.Directive>}
+     * @type {Array<module:collection~ModuleCollection.Source.Directive>}
      */
     directives: [],
+
+    /**
+     * @type {Object<module:collection~ModuleCollection.Source.Processor}
+     */
+    processors: {},
 
     /**
      * @param {string} definition
@@ -565,7 +589,7 @@ lib.copy(ModuleCollection.Source, /** @lends module:collection~ModuleCollection.
      */
     addDirective: function (definition, evaluator) {
         if (typeof evaluator !== "function") {
-            throw "Directive evaluator cannot be not a function!";
+            throw new Error("Directive evaluator cannot be not a function!");
         }
         this.directives.push(new this.Directive(definition, evaluator));
     },
@@ -576,6 +600,31 @@ lib.copy(ModuleCollection.Source, /** @lends module:collection~ModuleCollection.
     addDirectives: function (directives) {
         for (var definition in directives) {
             this.addDirective(definition, directives[definition]);
+        }
+    },
+
+    /**
+     * @param {string} definition
+     * @param {function} evaluator
+     */
+    addProcessor: function (definition, evaluator) {
+        if (typeof evaluator !== "function") {
+            throw new Error("Processor evaluator cannot be not a function!");
+        }
+
+        if (this.processors[definition]) {
+            throw new Error("Duplicate processor.");
+        }
+
+        this.processors[definition] = (new this.Processor(definition, evaluator));
+    },
+
+    /**
+     * @param {object<Source.Directive>} processors
+     */
+    addProcessors: function (processors) {
+        for (var definition in processors) {
+            this.addProcessor(definition, processors[definition]);
         }
     }
 });
@@ -593,23 +642,25 @@ lib.copy(ModuleCollection.Source.prototype, /** @lends module:collection~ModuleC
     },
 
     /**
+     * @returns {Array<string>}
+     */
+    content: function () {
+        return this.contentBuffer || (this.contentBuffer = this.raw.toString().split(E));
+    },
+
+    /**
      * @param {Object=} scope
      */
     parse: function (ns) {
         var source = this;
 
         this.tree().comments.forEach(function (comment) {
-            var returns = [ns, {}]; // we store it as array of object so that it can be concatenated with arguments
+            var returns = [ns || {}, {}]; // We store it as array of objects to concat with arguments
 
             // Only continue if its a block comment and starts with jsdoc syntax. Also prevet blocks having @ignore
             // tags from being parsed.
-            if (comment.type !== BLOCK || comment.value.charAt() !== ASTERISK ||
-                /\@ignore[\@\s\r\n]/ig.test(comment.value)) {
-                return;
-            }
-
             // Pass the directives in given order
-            ModuleCollection.Source.directives.forEach(function (directive) {
+            lib.isJSDocBlock(comment) && ModuleCollection.Source.directives.forEach(function (directive) {
                 // Call the directive replacer function and then pass the evaluator via a router
                 comment.value.replace(directive.pattern, (function () {
                     return function ($glob, $1) {
@@ -621,9 +672,34 @@ lib.copy(ModuleCollection.Source.prototype, /** @lends module:collection~ModuleC
                 }())); // end comment replacer callback
             }); // end order forEach
         }); // end comment forEach
+    },
+
+    /**
+     * @param {Object} invokedProcessors
+     */
+    process: function (invokedProcessors) {
+        var processor,
+            scope = {
+                content: this.content()
+            },
+
+            runprocessor = function (comment) { // defined outside to save redefinition in loop.
+                // Only continue if its a block comment and starts with jsdoc syntax. Also prevet blocks having @ignore
+                // tags from being parsed.
+                if (!lib.isJSDocBlock(comment)) {
+                    return;
+                }
+                scope.comment = comment;
+                this.evaluator.apply(this, this.options);
+            };
+
+        for (processor in invokedProcessors) {
+            scope.evaluator = ModuleCollection.Source.processors[processor].evaluator;
+            scope.options = invokedProcessors[processor];
+            this.tree().comments.forEach(runprocessor, scope);
+        }
     }
 });
-
 
 ModuleCollection.analysers = [];
 
