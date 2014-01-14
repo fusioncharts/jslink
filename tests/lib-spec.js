@@ -237,7 +237,7 @@ describe("library module", function () {
             expect(lib.isUnixDirectory("a/b")).toBe(false);
             expect(lib.isUnixDirectory(".a/b.out")).toBe(false);
             expect(lib.isUnixDirectory("a/b.c")).toBe(false);
-        });    
+        });
     });
 
     describe("lib.parseJSONBooleans", function() {
@@ -246,7 +246,7 @@ describe("library module", function () {
         });
 
         it("object properties which have 'false' string should be converted to false", function () {
-            
+
             expect(lib.parseJSONBooleans({
                 b: "    false",
                 c: "false ",
