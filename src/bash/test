@@ -1,7 +1,7 @@
 set -e
 
-jshint src/
-jshint tests/
+jshint --version
+jshint src/ tests/ --verbose
 
 src/jslink --version
 src/jslink src/ --test
