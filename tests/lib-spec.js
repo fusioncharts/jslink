@@ -64,7 +64,7 @@ describe("library module", function () {
             expect(lib.format("{0}{1}{2}", "One", undefined, "Two")).toBe("OneundefinedTwo");
             expect(lib.format("{0}{1}{2}", undefined, {}, false)).toBe("undefined[object Object]false");
             expect(lib.format("{0}{1}{2}", [undefined])).toBe("undefinedundefinedundefined");
- 
+
         });
 
         it("No args must return the unformatted object", function() {
@@ -123,13 +123,13 @@ describe("library module", function () {
         it ("lib.copy function must exist", function() {
             expect(lib.copy).toBeOfType("function");
         });
-        
+
         it("Every property from source to sink must have been copied", function() {
             var sink,
                 source;
 
             sink =  {
-                a: 1, 
+                a: 1,
                 b: 3
             };
 
@@ -188,10 +188,13 @@ describe("library module", function () {
             expect(lib.isUnixHiddenPath).toBeOfType("function");
         });
 
-       /* it("current folder and parent folder should be hidden paths", function() {
+        /*
+        @todo
+        it("current folder and parent folder should be hidden paths", function() {
             expect(lib.isUnixHiddenPath(".")).toBe(true);
             expect(lib.isUnixHiddenPath("..")).toBe(true);
-        });*/
+        });
+        */
 
         it("hidden files and folders should be hidden paths", function () {
             expect(lib.isUnixHiddenPath(".abc/")).toBe(true);
@@ -200,7 +203,7 @@ describe("library module", function () {
             expect(lib.isUnixHiddenPath(".a/b/c.out")).toBe(true);
             expect(lib.isUnixHiddenPath("a/b/.out")).toBe(true);
             expect(lib.isUnixHiddenPath("a/b/.o.ut")).toBe(true);
-        });  
+        });
 
         it("Following paths should not be hidden paths", function () {
             expect(lib.isUnixHiddenPath("abc/")).toBe(false);
@@ -208,7 +211,7 @@ describe("library module", function () {
             expect(lib.isUnixHiddenPath("a/b")).toBe(false);
             expect(lib.isUnixHiddenPath("a/b/c.out")).toBe(false);
             expect(lib.isUnixHiddenPath("a/b/out")).toBe(false);
-        });    
+        });
     });
 
     describe("lib.isUnixDirectory", function() {
@@ -234,7 +237,7 @@ describe("library module", function () {
             expect(lib.isUnixDirectory("a/b")).toBe(false);
             expect(lib.isUnixDirectory(".a/b.out")).toBe(false);
             expect(lib.isUnixDirectory("a/b.c")).toBe(false);
-        });    
+        });
     });
 
     describe("lib.parseJSONBooleans", function() {
@@ -243,7 +246,7 @@ describe("library module", function () {
         });
 
         it("object properties which have 'false' string should be converted to false", function () {
-            
+
             expect(lib.parseJSONBooleans({
                 b: "    false",
                 c: "false ",
@@ -257,7 +260,7 @@ describe("library module", function () {
             });
 
         });
-        
+
         it ("property values which do not contain only 'false' string should be considered as true", function(){
             expect(lib.parseJSONBooleans({
                 a: "true",
@@ -271,7 +274,7 @@ describe("library module", function () {
                 b: true,
                 c: true,
                 d: true
-            }); 
+            });
 
             expect(lib.parseJSONBooleans({
                 a: "true",
@@ -323,7 +326,8 @@ describe("library module", function () {
             expect(lib.cacher).toBeOfType("function");
         });
 
-        it("A function call with already called arguments should be picked up from the cache instead of it getting called", function() {
+        it("A function call with already called arguments should be picked up from the cache instead of it getting " +
+            "called", function() {
             var sum,
                 cachedSum;
 
@@ -344,7 +348,8 @@ describe("library module", function () {
 
         });
 
-        it ("calling the function with same args after 1e3 distinct arg calls should invoke the function again", function () {
+        it ("calling the function with same args after 1e3 distinct arg calls should invoke the function again",
+                function () {
             var sum,
                 cachedSum;
 
