@@ -79,6 +79,12 @@ describe("library module", function () {
         });
     });
 
+    describe("lib.fillStringArray()", function () {
+        it ("must be a function", function () {
+            expect(lib.fillStringArray).toBeOfType("function");
+        });
+    });
+
     describe("`lib.stringLike`", function () {
         it ("must exist", function () {
             expect(lib.stringLike).toBeOfType("function");
@@ -188,10 +194,13 @@ describe("library module", function () {
             expect(lib.isUnixHiddenPath).toBeOfType("function");
         });
 
-       /* it("current folder and parent folder should be hidden paths", function() {
+        /*
+        @todo
+        it("current folder and parent folder should be hidden paths", function() {
             expect(lib.isUnixHiddenPath(".")).toBe(true);
             expect(lib.isUnixHiddenPath("..")).toBe(true);
-        });*/
+        });
+        */
 
         it("must consider hidden files and folders as hidden paths", function () {
             expect(lib.isUnixHiddenPath(".abc/")).toBe(true);
@@ -369,7 +378,8 @@ describe("library module", function () {
         });
     });
 
-    describe("lib.orderedKeys", function () {
+
+    describe("`lib.orderedKeys`", function () {
         it ("must be a function", function () {
             expect(lib.orderedKeys).toBeOfType("function");
         });
@@ -435,6 +445,47 @@ describe("library module", function () {
                 b: false,
                 c: function () {}
             }, ["a", "c", "b"], /^function|boolean$/)).toEqual(["c", "b"]);
+        });
+
+    });
+
+    describe("lib.isJSDocBlock", function () {
+
+        it("must be a function", function () {
+            expect(lib.isJSDocBlock).toBeOfType("function");
+        });
+
+        it ("must return true when jsdoc-style block comment is passed", function () {
+            expect(lib.isJSDocBlock({
+                type: "Block",
+                value: "*"
+            })).toBeTruthy();
+        });
+
+        it ("must return false if @ignore directive is provided in jsdoc-style block", function() {
+            expect(lib.isJSDocBlock({
+                type: "Block",
+                value: "* @ignore"
+            })).not.toBeTruthy();
+        });
+
+        it ("must return true if @ignore directive is provided and `ignoreIgnore` flag is set to true", function() {
+            expect(lib.isJSDocBlock({
+                type: "Block",
+                value: "* @ignore"
+            }, true)).toBeTruthy();
+        });
+
+        it ("must not accept non-jsdoc style comment", function() {
+            expect(lib.isJSDocBlock({
+                type: "Block",
+                value: "voila!"
+            })).not.toBeTruthy();
+
+            expect(lib.isJSDocBlock({
+                type: "Line",
+                value: "* voila!"
+            })).not.toBeTruthy();
         });
 
     });

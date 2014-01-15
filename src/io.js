@@ -8,7 +8,9 @@
  * @requires parsers
  */
 
-var DEFAULT_INCLUDE_PATTERN = /.+\.js$/,
+var E = "",
+
+    DEFAULT_INCLUDE_PATTERN = /.+\.js$/,
     DEFAULT_EXCLUDE_PATTERN = /^$/,
     DEFAULT_DOT_FILENAME = "jslink.dot",
     DEFAULT_OUT_DESTINATION = "out/",
@@ -24,6 +26,7 @@ var DEFAULT_INCLUDE_PATTERN = /.+\.js$/,
 
 // Add the directives to the Source processor
 ModuleCollection.Source.addDirectives(parsers.directives);
+ModuleCollection.Source.addProcessors(parsers.processors);
 
 /**
  * Writes a 2d array of modules to a set of files with the module source contents.
@@ -45,7 +48,7 @@ writeSerializedModules = function (matrix, destination, overwrite) {
 
     // Adds the content of source file to target file.
     appendSource = function (source) {
-        fs.appendFileSync(this[0], source.raw);
+        fs.appendFileSync(this[0], source.content().join(E));
     };
 
     // Create or empty the file name from the bunch of targets.
@@ -167,6 +170,31 @@ module.exports = {
         // If test mode is true, we do not need to proceed further with exporting the files
         if (!testMode) {
             writeSerializedModules(matrix, destination, overwrite);
+        }
+    },
+
+    /**
+     * Processes the sources within a collection.
+     *
+     * @param {module:collection~ModuleCollection} collection
+     * @param {object} options
+     */
+    processCollectionSources: function (collection, options) {
+        var processorOptions = {},
+            processor,
+            option;
+
+        for (processor in ModuleCollection.Source.processors) {
+            processor = ModuleCollection.Source.processors[processor];
+            option = options[processor.name];
+
+            if (option) {
+                processorOptions[processor.name] =  Array.isArray(option) ? option : (option === true ? [] : [option]);
+            }
+        }
+
+        for (var source in collection.sources) {
+            collection.sources[source].process(processorOptions);
         }
     },
 
