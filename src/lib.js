@@ -318,7 +318,7 @@ module.exports = lib = /** @lends module:lib */ {
         }
 
         // Validate type parameter
-        if (!type || type.test !== FUNCTION) {
+        if (!type || (typeof type.test !== FUNCTION)) {
             type = /./g;
         }
 
