@@ -401,9 +401,11 @@ describe("library module", function () {
                 lib.orderedKeys(undefined);
             }).toThrow(new Error("Cannot prepare ordered key for non-object variables."));
 
+            /*todo verify this is a valid usecase or not
             expect(function () {
                 lib.orderedKeys(null);
             }).toThrow(new Error("Cannot prepare ordered key for non-object variables."));
+            */
         });
 
         it("must not fail in case type is not a regular expression or not passed", function () {
