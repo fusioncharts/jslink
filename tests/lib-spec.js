@@ -35,12 +35,12 @@ describe("library module", function () {
         });
     });
 
-    describe("lib.format", function() {
-        it ("format must exist", function () {
+    describe("`lib.format`", function() {
+        it ("must exist", function () {
             expect(lib.format).toBeOfType("function");
         });
 
-        it ("format must return the same variable in case of non string variable", function () {
+        it ("must return the same variable in case of non string variable", function () {
             expect(lib.format([], [])).toEqual([]);
             expect(lib.format({}, [])).toEqual({});
 
@@ -48,26 +48,26 @@ describe("library module", function () {
             expect(lib.format(undefined, [])).toBe("");
         });
 
-        it("format must replace correctly in case of args array passed or if passed as arguments", function () {
+        it("must replace correctly in case of args array passed or if passed as arguments", function () {
             expect(lib.format("{0}Two{1}Four{2}", ["One", "Three", "Five"])).toBe("OneTwoThreeFourFive");
             expect(lib.format("{0}Two{2}Four{1}", ["One", "Three", "Five"])).toBe("OneTwoFiveFourThree");
             expect(lib.format("{0}Two{1}Four{2}", "One", [], "Five")).toBe("OneTwoFourFive");
             expect(lib.format("{0}Two{1}Four{1}", "One", "Three", "Five")).toBe("OneTwoThreeFourThree");
         });
 
-        it ("format must replace null argument(s with empty string", function () {
+        it ("must replace null argument(s with empty string", function () {
             expect(lib.format("{0}{1}{2}", "One", null, "Two")).toBe("OneTwo");
             expect(lib.format("{0}{1}{2}", null, null, null)).toBe("");
         });
 
-        it("fewer Arguments or falsy values(except null) must not be made empty strings", function() {
+        it("must not convert fewer or falsy arguments(except null) to empty values", function() {
             expect(lib.format("{0}{1}{2}", "One", undefined, "Two")).toBe("OneundefinedTwo");
             expect(lib.format("{0}{1}{2}", undefined, {}, false)).toBe("undefined[object Object]false");
             expect(lib.format("{0}{1}{2}", [undefined])).toBe("undefinedundefinedundefined");
- 
+
         });
 
-        it("No args must return the unformatted object", function() {
+        it("must return the unformatted arguments in case of no args", function() {
             expect(lib.format("{0}{1}{2}", [])).toBe("{0}{1}{2}");
             expect(lib.format("{0}{1}{2}")).toBe("{0}{1}{2}");
 
@@ -79,7 +79,7 @@ describe("library module", function () {
         });
     });
 
-    describe("`lib.stringLike", function () {
+    describe("`lib.stringLike`", function () {
         it ("must exist", function () {
             expect(lib.stringLike).toBeOfType("function");
         });
@@ -118,18 +118,18 @@ describe("library module", function () {
         });
     });
 
-    describe("lib.copy", function() {
+    describe("`lib.copy`", function() {
 
-        it ("lib.copy function must exist", function() {
+        it ("function must exist", function() {
             expect(lib.copy).toBeOfType("function");
         });
-        
-        it("Every property from source to sink must have been copied", function() {
+
+        it("must copy every property from source to sink", function() {
             var sink,
                 source;
 
             sink =  {
-                a: 1, 
+                a: 1,
                 b: 3
             };
 
@@ -147,8 +147,8 @@ describe("library module", function () {
         });
     });
 
-    describe("lib.argsArray2Object", function() {
-        it ("argsArray2Object function must exist", function() {
+    describe("`lib.argsArray2Object`", function() {
+        it ("function must exist", function() {
             expect(lib.copy).toBeOfType("function");
         });
 
@@ -183,8 +183,8 @@ describe("library module", function () {
         });
     });
 
-    describe("lib.isUnixHiddenPath", function() {
-        it("isUnixHiddenPath function must be there in lib", function() {
+    describe("`lib.isUnixHiddenPath`", function() {
+        it("function must be there in lib", function() {
             expect(lib.isUnixHiddenPath).toBeOfType("function");
         });
 
@@ -193,57 +193,57 @@ describe("library module", function () {
             expect(lib.isUnixHiddenPath("..")).toBe(true);
         });*/
 
-        it("hidden files and folders should be hidden paths", function () {
+        it("must consider hidden files and folders as hidden paths", function () {
             expect(lib.isUnixHiddenPath(".abc/")).toBe(true);
             expect(lib.isUnixHiddenPath(".a.out")).toBe(true);
             expect(lib.isUnixHiddenPath(".a/b")).toBe(true);
             expect(lib.isUnixHiddenPath(".a/b/c.out")).toBe(true);
             expect(lib.isUnixHiddenPath("a/b/.out")).toBe(true);
             expect(lib.isUnixHiddenPath("a/b/.o.ut")).toBe(true);
-        });  
+        });
 
-        it("Following paths should not be hidden paths", function () {
+        it("must not consider the following paths as hidden paths", function () {
             expect(lib.isUnixHiddenPath("abc/")).toBe(false);
             expect(lib.isUnixHiddenPath("a.out")).toBe(false);
             expect(lib.isUnixHiddenPath("a/b")).toBe(false);
             expect(lib.isUnixHiddenPath("a/b/c.out")).toBe(false);
             expect(lib.isUnixHiddenPath("a/b/out")).toBe(false);
-        });    
+        });
     });
 
-    describe("lib.isUnixDirectory", function() {
-        it("isUnixDirectory function must be there in lib", function () {
+    describe("`lib.isUnixDirectory`", function() {
+        it("function must be there in lib", function () {
             expect(lib.isUnixDirectory).toBeOfType("function");
         });
 
-        it("current folder and parent folder are directories", function () {
+        it("must treat current folder and parent folder as directories", function () {
             expect(lib.isUnixDirectory(".")).toBe(true);
             expect(lib.isUnixDirectory("..")).toBe(true);
         });
 
-        it("Following paths should be directory paths", function () {
+        it("must treat following paths as directory paths", function () {
             expect(lib.isUnixDirectory(".abc/")).toBe(true);
             expect(lib.isUnixDirectory(".a/b/")).toBe(true);
             expect(lib.isUnixDirectory("a/b/")).toBe(true);
             expect(lib.isUnixDirectory("a/b.c/")).toBe(true);
         });
 
-        it("Following paths should not be directory paths", function () {
+        it("must not treat the following paths as directory paths", function () {
             expect(lib.isUnixDirectory(".abc")).toBe(false);
             expect(lib.isUnixDirectory(".a/b")).toBe(false);
             expect(lib.isUnixDirectory("a/b")).toBe(false);
             expect(lib.isUnixDirectory(".a/b.out")).toBe(false);
             expect(lib.isUnixDirectory("a/b.c")).toBe(false);
-        });    
+        });
     });
 
-    describe("lib.parseJSONBooleans", function() {
-        it("parseJSONBooleans function must be there in lib", function () {
+    describe("`lib.parseJSONBooleans`", function() {
+        it("function must be there in lib", function () {
             expect(lib.parseJSONBooleans).toBeOfType("function");
         });
 
-        it("object properties which have 'false' string should be converted to false", function () {
-            
+        it("must convert object properties which have 'false' string to boolean false", function () {
+
             expect(lib.parseJSONBooleans({
                 b: "    false",
                 c: "false ",
@@ -257,8 +257,8 @@ describe("library module", function () {
             });
 
         });
-        
-        it ("property values which do not contain only 'false' string should be considered as true", function(){
+
+        it ("must convert property values which do not contain only 'false' string to true", function(){
             expect(lib.parseJSONBooleans({
                 a: "true",
                 b: "random    false",
@@ -271,7 +271,7 @@ describe("library module", function () {
                 b: true,
                 c: true,
                 d: true
-            }); 
+            });
 
             expect(lib.parseJSONBooleans({
                 a: "true",
@@ -288,7 +288,7 @@ describe("library module", function () {
             });
         });
 
-        it("the same variable should be returned in case it is not an object or properties or not passed", function () {
+        it("must return the same variable in case it is not an object or properties are not passed", function () {
             expect(lib.parseJSONBooleans("a", ["a"])).toBe("a");
             expect(lib.parseJSONBooleans(5, ["a"])).toBe(5);
             expect(lib.parseJSONBooleans(true, ["a"])).toBe(true);
@@ -314,20 +314,20 @@ describe("library module", function () {
                 d: " true"
             });
         });
-
-
     });
 
-    describe("lib.cacher", function () {
-        it("cacher function must be there in lib", function () {
+    describe("`lib.cacher`", function () {
+        it("function must be there in lib", function () {
             expect(lib.cacher).toBeOfType("function");
         });
 
-        it("A function call with already called arguments should be picked up from the cache instead of it getting called", function() {
+        it("must return a cached value if the function was called with same arguments previously", function() {
             var sum,
                 cachedSum;
 
             sum = function(a, b) {
+
+                //callCount property is maintained to track how many times the function is being called
                 sum.callCount = ++sum.callCount || 1;
 
                 return a + b;
@@ -344,11 +344,12 @@ describe("library module", function () {
 
         });
 
-        it ("calling the function with same args after 1e3 distinct arg calls should invoke the function again to make sure cache is being busted", function () {
+        it ("must bust the cache after 1e3 unique function calls", function () {
             var sum,
                 cachedSum;
 
             sum = function(a, b) {
+                //callCount property is maintained to track how many times the function is being called
                 sum.callCount = ++sum.callCount || 1;
 
                 return a + b;
@@ -369,11 +370,11 @@ describe("library module", function () {
     });
 
     describe("lib.orderedKeys", function () {
-        it ("lib.orderedKeys must be a function", function () {
+        it ("must be a function", function () {
             expect(lib.orderedKeys).toBeOfType("function");
         });
 
-        it ("Must throw an error when object is not passed for orderedKeys", function () {
+        it ("must throw an error when object is not passed for orderedKeys", function () {
             expect(function () {
                 lib.orderedKeys("");
             }).toThrow(new Error("Cannot prepare ordered key for non-object variables."));
@@ -395,27 +396,27 @@ describe("library module", function () {
             }).toThrow(new Error("Cannot prepare ordered key for non-object variables."));
         });
 
-        it("Must not fail in case type is not a regular expression or not passed", function () {
-            expect(lib.orderedKeys({ 
+        it("must not fail in case type is not a regular expression or not passed", function () {
+            expect(lib.orderedKeys({
                 a: 1
             }, ["a", "b"])).toEqual(["a"]);
 
-            expect(lib.orderedKeys({ 
+            expect(lib.orderedKeys({
                 a: 1
-            }, ["a", "b"], "a")).toEqual(["a"]);            
+            }, ["a", "b"], "a")).toEqual(["a"]);
         });
 
-        it("Must return the properties in the reference order", function () {
-            expect(lib.orderedKeys({ 
+        it("must return the properties in the reference order", function () {
+            expect(lib.orderedKeys({
                 a: 1
             }, ["a", "b"])).toEqual(["a"]);
 
-            expect(lib.orderedKeys({ 
+            expect(lib.orderedKeys({
                 a: 1,
                 b: false
             }, ["a", "b"])).toEqual(["a", "b"]);
 
-            expect(lib.orderedKeys({ 
+            expect(lib.orderedKeys({
                 a: 1,
                 b: false,
                 c: function () {}
@@ -423,13 +424,13 @@ describe("library module", function () {
         });
 
         it("must return those properties which are of the passed type", function () {
-            expect(lib.orderedKeys({ 
+            expect(lib.orderedKeys({
                 a: 1,
                 b: false,
                 c: function () {}
             }, ["a", "c", "b"], /^function$/)).toEqual(["c"]);
 
-            expect(lib.orderedKeys({ 
+            expect(lib.orderedKeys({
                 a: 1,
                 b: false,
                 c: function () {}
