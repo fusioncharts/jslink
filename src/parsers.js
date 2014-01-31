@@ -55,7 +55,7 @@ module.exports = {
         // This function searches whether the module definition has any export directive. This is defined here
         // to avoid repeated definition within loop.
         "export": function (collection, args, exportPath) {
-            args.module && args.module.addExport(exportPath);
+            collection.addExport(args.module, exportPath);
         }
     },
 

@@ -106,6 +106,12 @@ ModuleCollection = function () {
     this.dependencies = [];
 
     /**
+     * Stores the references of all modules that mentions exports.
+     * @type {Object<module:collection~ModuleCollection.Module>}
+     */
+    this.exports = {};
+
+    /**
      * Keeps a track of the number of dependencies added to this collection.
      * @type {number}
      */
@@ -174,6 +180,13 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
         return (module && this.get(module, true).define(new ModuleCollection.Source(path)).source) ||
             (this.sources[path] || (this.sources[path] = new ModuleCollection.Source(path)));
 
+    },
+
+    /**
+     * Adds an export directive to the modules
+     */
+    addExport: function (module, path) {
+        return (this.exports[(module = this.get(module).addExport(path))] = module);
     },
 
     /**
@@ -425,7 +438,6 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
 
     /**
      * Add the list of target modules marked for export.
-     * @param {module:collection~ModuleCollection.Module} module
      * @param {string} meta
      */
     addExport: function (meta) {
@@ -439,7 +451,7 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
             this.exports.push(meta);
         }
 
-        return module;
+        return this;
     },
 
     /**
