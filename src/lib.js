@@ -287,7 +287,7 @@ module.exports = lib = /** @lends module:lib */ {
      * @returns {RegExp}
      */
     getDirectivePattern: function (directive) {
-        return new RegExp(lib.format("\\@{0}\\s*([^\\@\\r\\n]*)", directive), "ig");
+        return new RegExp(lib.format("\\@{0}[\\s\\n\\r]+([^\\@\\r\\n]*)", directive), "ig");
     },
 
     /**
@@ -467,5 +467,13 @@ module.exports = lib = /** @lends module:lib */ {
         }
 
         return (/\/$/).test(path) ? path : path + SLASH;
+    },
+
+    /**
+     * This function outputs to console based on jslink global verbose mode
+     * @param {string} what - The message to log.
+     */
+    note: function (what) {
+        global.jslinkVerbose && console.log(what);
     }
 };

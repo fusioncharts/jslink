@@ -53,6 +53,8 @@ writeSerializedModules = function (matrix, destination, overwrite) {
 
     // Create or empty the file name from the bunch of targets.
     createTarget = function (targetFileName) {
+        lib.note("Writing to file: " + targetFileName);
+
         targetFileName = pathUtil.join(destination, targetFileName); // append destination to file name
         lib.writeableFile(true, targetFileName, overwrite, false, true);
         this.forEach(appendSource, [targetFileName]);
