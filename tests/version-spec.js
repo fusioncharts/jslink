@@ -1,8 +1,13 @@
-// This spec ensures that the version number is consistent across multiple locations in the package.
-var fs = require("fs");
+/**
+ * @fileOverview
+ * This file contains all test specifications that require to be executed to ensure that the product version number is
+ * uniform across various manifestations in the code (e.g. man page, package.json, etc.)
+ */
 
+/* global describe, it, expect */
 describe ("product version string", function () {
-    var versions = {};
+    var fs = require("fs"),
+        versions = {};
 
     it ("must be defined in package.json", function () {
         var version = JSON.parse(fs.readFileSync("./package.json")).version;

@@ -5,10 +5,19 @@
  *
  * @requires lib
  */
-var lib = require("./lib.js"),
-    ModuleCollection,
-    collectionTopoSort,
-    collectionAdjacencyIndex;
+var SPC = " ",
+    E = "",
+
+    lib = require("./lib.js"),
+    fs = require("fs"),
+    esprima = require("esprima"),
+
+    esprimaOptions = {
+        comment: true,
+        range: true
+    },
+    ModuleCollection, // constructor
+    collectionTopoSort; // helper function
 
 /**
  * This function recursively traverses through modules (vertices of a DAG) and pushes them to a stack in a neatly sorted
@@ -16,51 +25,38 @@ var lib = require("./lib.js"),
  *
  * @private
  * @param {module:collection~ModuleCollection.Module} module
- * @param {Array<module:collection~ModuleCollection.Module>} sortStack
+ * @param {Array<module:collection~ModuleCollection.Module>} matrix
  */
-collectionTopoSort = function (module, sortStack) {
+collectionTopoSort = function (module, _stack) {
     var item;
 
     if (module.topologicalMarker) {
         delete module.topologicalMarker;
-        throw "Cyclic dependency error discovered while parsing: " + module.name;
+        throw new Error(lib.format("Cyclic dependency error discovered while parsing {0}", module.name));
     }
 
-    if (!module.sorting) {
+    // Ensure that the _stack is present
+    if (!_stack) {
+        _stack = [];
+        _stack.order = collectionTopoSort.uid++;
+    }
+
+    if (module._topostry !== _stack.order) {
         module.topologicalMarker = true;
+
         for (item in module.requires) {
-            collectionTopoSort(module.requires[item], sortStack); // recurse
+            collectionTopoSort(module.requires[item], _stack); // recurse
         }
+
         delete module.topologicalMarker;
-        module.sorting = true;
-        // Push into the right index
-        (sortStack[module.index] || (sortStack[module.index] = [])).push(module);
+        module._topostry = _stack.order; // mark
+        _stack.push(module); // Push into the right index
     }
+
+    return _stack;
 };
 
-/**
- * This function recursively traverses through the modules and assigns them an index based on the level of bidirectional
- * connectivity.
- *
- * @private
- * @param {module:collection~ModuleCollection.Module} module
- * @param {number} index
- */
-collectionAdjacencyIndex = function (module, index) {
-    var item;
-
-    if (!module.indexing) {
-        module.index = index;
-        module.indexing = true;
-
-        for (item in module.requires) {
-            collectionAdjacencyIndex(module.requires[item], index);
-        }
-        for (item in module.dependants) {
-            collectionAdjacencyIndex(module.dependants[item], index);
-        }
-    }
-};
+collectionTopoSort.uid = 1; // set counter for every new trace.
 
 /**
  * Represents a collection of modules that have ability to depend on each other. The class maintains the dependency
@@ -96,6 +92,12 @@ ModuleCollection = function () {
     this.dependencies = [];
 
     /**
+     * Stores the references of all modules that mentions exports.
+     * @type {Object<module:collection~ModuleCollection.Module>}
+     */
+    this.exports = {};
+
+    /**
      * Keeps a track of the number of dependencies added to this collection.
      * @type {number}
      */
@@ -116,25 +118,61 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
     },
 
     /**
-     * Gets a node by it's source file name.
+     * Gets nodes by it's source file name.
+     *
+     * @param {string} source
+     * @returns {Object<module:collection~ModuleCollection.Source>}
+     */
+    getSource: function (source) {
+        if (!this.sources[lib.stringLike(source)]) {
+            throw new Error("Source not defined: " + source);
+        }
+
+        return this.sources[source];
+    },
+
+    /**
+     * Gets nodes by it's source file name.
      *
      * @param {string} source
      * @returns {Object<module:collection~ModuleCollection.Module>}
      */
     getBySource: function (source) {
-        return this.sources[source];
+        return this.getSource(source).modules;
     },
 
     /**
      * Add a new module to the collection
      *
      * @param {string} name
-     * @param {string} source
+     * @param {module:collection~ModuleCollection.Source} source
      * @returns {module:collection~ModuleCollection.Module}
      */
-    add: function (name, source) {
-        return ((this.sources[(this._recentModule = this.get(name, true).define(source)).source] ||
-            (this.sources[this._recentModule] = {}))[this._recentModule.source] = this._recentModule);
+    addModule: function (name, source) {
+        if (!(source = this.getSource(source))) {
+            throw new Error("Source not predefined for module: " + name);
+        }
+
+        return this.get(name, true).define(source);
+    },
+
+    /**
+     * Add a source file to the collection
+     * @param {string} path
+     * @param {module:collection~ModuleCollection.Module=} [module]
+     * @return {module:collection~ModuleCollection.Source}
+     */
+    addSource: function (path, module) {
+        return (module && this.get(module, true).define(new ModuleCollection.Source(path)).source) ||
+            (this.sources[path] || (this.sources[path] = new ModuleCollection.Source(path)));
+
+    },
+
+    /**
+     * Adds an export directive to the modules
+     */
+    addExport: function (module, path) {
+        return (this.exports[(module = this.get(module).addExport(path))] = module);
     },
 
     /**
@@ -177,7 +215,7 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
 
         // Clone the sources
         for (item in this.modules) {
-            clone.add(this.modules[item].clone(), this.modules[item].source);
+            clone.addModule(this.modules[item].clone(), this.modules[item].source);
         }
 
         // filter out and add the vertices that are defined at both ends.
@@ -195,31 +233,18 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
      * @returns {Array<Array>}
      */
     serialize: function () {
-        var sortStack = [], // array to hold all the sorted modules.
-            adjacencyPoint = 0,
-            modules = this.modules,
+        var matrix = [], // array to hold all the sorted modules.
+            modules,
             module;
 
-        // Iterate over all modules, index them and run topological sort. Indexing will always go faster than sorting
-        // since index happens on both ingress and egress edges at the same time, as such 2x the cycle of sorting.
+        // Iterate over all modules, index them and run topological sort. Indexing can happen simultaneously as sorting
+        // since they are happening on a single trace at a time
+        modules = this.exports;
         for (module in modules) {
-            module = modules[module];
-            if (!module.indexing) {
-                collectionAdjacencyIndex(module, adjacencyPoint++);
-            }
-            if (!module.sorting) {
-                collectionTopoSort(module, sortStack);
-            }
+            matrix.push(collectionTopoSort(modules[module]));
         }
 
-        // Iterate over modules once more to remove all sorting flags. This is unneeded if the intention is to sort
-        // once only.
-        for (module in modules) {
-            delete modules[module].sorting;
-            delete modules[module].indexing;
-        }
-
-        return sortStack;
+        return matrix;
     },
 
 
@@ -354,7 +379,7 @@ ModuleCollection.Module = function (name, source) {
     /**
      * The source file path that defines this module. This is to be used as a getter and should be set using the
      * {@link module:collection~ModuleCollection.Module#define} method.
-     * @type {string}
+     * @type {module:collection~ModuleCollection.Source}
      * @readOnly
      */
     this.source = undefined;
@@ -377,13 +402,15 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
             throw lib.format("Duplicate definition of {0} at: {1}\n\nAlready defined by {2}", this.name, source,
                 this.source);
         }
-        this.source = lib.stringLike(source); // store
+        if (!(source instanceof ModuleCollection.Source)) {
+            throw "Definition accepts instance of ModuleCollection.Source only.";
+        }
+        this.source = source; // store
         return this; // chain
     },
 
     /**
      * Add the list of target modules marked for export.
-     * @param {module:collection~ModuleCollection.Module} module
      * @param {string} meta
      */
     addExport: function (meta) {
@@ -397,7 +424,7 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
             this.exports.push(meta);
         }
 
-        return module;
+        return this;
     },
 
     /**
@@ -406,7 +433,7 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
      * @returns {boolean}
      */
     defined: function () {
-        return this.source !== undefined;
+        return (this.source instanceof ModuleCollection.Source);
     },
 
     /**
@@ -419,11 +446,11 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
     require: function (requirement) {
         // Module cannot depend on itself and it cannot add a dependency already added.
         if (this.name === requirement.name) {
-            throw lib.format("Module {0} cannot depend on itself!", this);
+            throw new Error(lib.format("Module {0} cannot depend on itself!", this));
         }
 
         if (this.requires[requirement] || requirement.dependants[this]) {
-            throw lib.format("{1} already marked as requirement of {0}", this.name, requirement.name);
+            throw new Error(lib.format("{1} already marked as requirement of {0}", this.name, requirement.name));
         }
 
         // Store the dependency within both the connected modules.
@@ -448,6 +475,216 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
     }
 });
 
+/**
+ * The class allows parsing of Mozilla compatible AST from a source file and then perform operations on the tree as a
+ * part of process, verification or for output.
+ *
+ * @constructor
+ * @param {string} path
+ */
+ModuleCollection.Source = function (path) {
+    /**
+     * Stores the path of the source
+     * @type {string}
+     */
+    this.path = path;
+
+    // Since parsing might have error, but that needs to be trapped to return error report. Thus, we wrap it
+    // inside a try block.
+    try {
+        /**
+         * Raw data of the source file.
+         *
+         * @type {string}
+         */
+        this.raw = fs.readFileSync(path);
+    }
+    catch (err) {
+        throw new Error(lib.format("{1}\n> {0}", path, err.message));
+    }
+
+    /**
+     * The ESPrima parsed source tree for this source.
+     * @type {object}
+     */
+    this.ast = {
+        comments: [],
+        stub: true
+    };
+};
+
+/**
+ * @constructor
+ * @param {string} definition
+ * @param {function} evaluator
+ */
+ModuleCollection.Source.Directive = function (definition, evaluator) {
+    /**
+     * @type {string}
+     */
+    this.definition = definition;
+    /**
+     * @type {function}
+     */
+    this.evaluator = evaluator;
+    /**
+     * @type {string}
+     */
+    this.name = definition.split(SPC)[0];
+    /**
+     * @type {RegExp}
+     */
+    this.pattern = lib.getDirectivePattern(this.name);
+};
+
+/**
+ * @constructor
+ * @param {string} definition
+ * @param {function} evaluator
+ */
+ModuleCollection.Source.Processor = function (definition, evaluator) {
+    /**
+     * @type {string}
+     */
+    this.name = definition;
+    /**
+     * @type {function}
+     */
+    this.evaluator = evaluator;
+    /**
+     * @type {string}
+     */
+    this.name = definition.split(SPC)[0];
+};
+
+lib.copy(ModuleCollection.Source, /** @lends module:collection~ModuleCollection.Source */ {
+    /**
+     * @type {Array<module:collection~ModuleCollection.Source.Directive>}
+     */
+    directives: [],
+
+    /**
+     * @type {Object<module:collection~ModuleCollection.Source.Processor}
+     */
+    processors: {},
+
+    /**
+     * @param {string} definition
+     * @param {function} evaluator
+     */
+    addDirective: function (definition, evaluator) {
+        if (typeof evaluator !== "function") {
+            throw new Error("Directive evaluator cannot be not a function!");
+        }
+        this.directives.push(new this.Directive(definition, evaluator));
+    },
+
+    /**
+     * @param {object<Source.Directive>} directives
+     */
+    addDirectives: function (directives) {
+        for (var definition in directives) {
+            this.addDirective(definition, directives[definition]);
+        }
+    },
+
+    /**
+     * @param {string} definition
+     * @param {function} evaluator
+     */
+    addProcessor: function (definition, evaluator) {
+        if (typeof evaluator !== "function") {
+            throw new Error("Processor evaluator cannot be not a function!");
+        }
+
+        if (this.processors[definition]) {
+            throw new Error("Duplicate processor.");
+        }
+
+        this.processors[definition] = (new this.Processor(definition, evaluator));
+    },
+
+    /**
+     * @param {object<Source.Directive>} processors
+     */
+    addProcessors: function (processors) {
+        for (var definition in processors) {
+            this.addProcessor(definition, processors[definition]);
+        }
+    }
+});
+
+lib.copy(ModuleCollection.Source.prototype, /** @lends module:collection~ModuleCollection.Source.prototype */ {
+    toString: function () {
+        return this.path;
+    },
+
+    /**
+     * @returns {object}
+     */
+    tree: function () {
+        return this.ast.stub && (this.ast = esprima.parse(this.raw.toString(), esprimaOptions)) || this.ast;
+    },
+
+    /**
+     * @returns {Array<string>}
+     */
+    content: function () {
+        return this.contentBuffer || (this.contentBuffer = this.raw.toString().split(E));
+    },
+
+    /**
+     * @param {Object=} scope
+     */
+    parse: function (ns) {
+        var source = this;
+
+        this.tree().comments.forEach(function (comment) {
+            var returns = [ns || {}, {}]; // We store it as array of objects to concat with arguments
+
+            // Only continue if its a block comment and starts with jsdoc syntax. Also prevet blocks having @ignore
+            // tags from being parsed.
+            // Pass the directives in given order
+            lib.isJSDocBlock(comment) && ModuleCollection.Source.directives.forEach(function (directive) {
+                // Call the directive replacer function and then pass the evaluator via a router
+                comment.value.replace(directive.pattern, (function () {
+                    return function ($glob, $1) {
+                        // Execute the evaluator in the source scope and send it a very specific argument set
+                        // 1: namespace, 2+: all the specific matches of the name pattern
+                        ($1 && ($1 = $1.trim())) && (returns[1][directive.name] = directive.evaluator.apply(source,
+                                returns.concat(Array.prototype.slice.call(arguments, 1, -2))));
+                    };
+                }())); // end comment replacer callback
+            }); // end order forEach
+        }); // end comment forEach
+    },
+
+    /**
+     * @param {Object} invokedProcessors
+     */
+    process: function (invokedProcessors) {
+        var processor,
+            scope = {
+                content: this.content()
+            },
+
+            runprocessor = function (comment) { // defined outside to save redefinition in loop.
+                // Only continue if its a block comment and starts with jsdoc syntax. Also prevet blocks having @ignore
+                // tags from being parsed.
+                if (!lib.isJSDocBlock(comment)) {
+                    return;
+                }
+                scope.comment = comment;
+                this.evaluator.apply(this, this.options);
+            };
+
+        for (processor in invokedProcessors) {
+            scope.evaluator = ModuleCollection.Source.processors[processor].evaluator;
+            scope.options = invokedProcessors[processor];
+            this.tree().comments.forEach(runprocessor, scope);
+        }
+    }
+});
 
 ModuleCollection.analysers = [];
 

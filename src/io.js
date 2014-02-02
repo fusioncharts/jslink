@@ -8,7 +8,10 @@
  * @requires parsers
  */
 
-var DEFAULT_INCLUDE_PATTERN = /.+\.js$/,
+var E = "",
+    DOT = ".",
+
+    DEFAULT_INCLUDE_PATTERN = /.+\.js$/,
     DEFAULT_EXCLUDE_PATTERN = /^$/,
     DEFAULT_DOT_FILENAME = "jslink.dot",
     DEFAULT_OUT_DESTINATION = "out/",
@@ -20,8 +23,11 @@ var DEFAULT_INCLUDE_PATTERN = /.+\.js$/,
     parsers = require("./parsers.js"),
 
     ModuleCollection = require("./collection.js"),
-    Source = require("./source.js"),
     writeSerializedModules; // function
+
+// Add the directives to the Source processor
+ModuleCollection.Source.addDirectives(parsers.directives);
+ModuleCollection.Source.addProcessors(parsers.processors);
 
 /**
  * Writes a 2d array of modules to a set of files with the module source contents.
@@ -32,26 +38,44 @@ var DEFAULT_INCLUDE_PATTERN = /.+\.js$/,
  */
 writeSerializedModules = function (matrix, destination, overwrite) {
     var createTarget, // function
-        appendSource; // function
+        appendSource, // function
+        pwdest;
 
     // Validate the destination directory.
     destination = lib.writeableFolder(destination, DEFAULT_OUT_DESTINATION);
+    pwdest = pathUtil.relative(DOT, destination);
 
     if (!fs.statSync(destination).isDirectory()) {
         throw lib.format("Output destination is not a directory: \"{0}\"", destination);
     }
 
     // Adds the content of source file to target file.
-    appendSource = function (sourceFileName) {
-        fs.appendFileSync(this[0], fs.readFileSync(sourceFileName));
+    appendSource = function (source) {
+        lib.log(function () {
+            return lib.format("    - {0}", pathUtil.relative(DOT, source.path));
+        }, true);
+        fs.appendFileSync(this[0], source.content().join(E));
     };
 
     // Create or empty the file name from the bunch of targets.
     createTarget = function (targetFileName) {
+        var sources = this;
+
+        // In case of verbose mode, output the list of individual modules written to the export file.
+        lib.log(function () {
+            return lib.format("\n  ✔︎ {0} ({1})", targetFileName, lib.plural(sources.length, "module"));
+        }, true);
+
         targetFileName = pathUtil.join(destination, targetFileName); // append destination to file name
         lib.writeableFile(true, targetFileName, overwrite, false, true);
-        this.forEach(appendSource, [targetFileName]);
+
+        sources.forEach(appendSource, [targetFileName]);
     };
+
+    // Announce the commencement of writing output files in case verbose mode is enabled.
+    lib.log(function () {
+        return lib.format("\nWriting export files to ./{0}", pwdest);
+    });
 
     matrix.forEach(function (bundle) {
         // Create and append files separately to reduce spatial complexity.
@@ -93,8 +117,7 @@ module.exports = {
             no_recurse: !recurse
             /*jshint camelcase: true */
         }, function (path, stat) {
-            var fileName,
-                source;
+            var fileName;
 
             // Increment counter of total file processing.
             collection._statFilesTotal++;
@@ -112,12 +135,7 @@ module.exports = {
 
             // We increment the error counter here and would decrement later when all goes well.
             collection._statFilesError++;
-            source = new Source(path); // Generate AST.
-
-            source.parseDirectives(parsers.directives, parsers.order, {
-                path: path,
-                collection: collection
-            });
+            collection.addSource(path).parse(collection);
 
             // Since we have reached here there wasn't any error parsing/reading the file and as such we decrement the
             // counter.
@@ -171,6 +189,31 @@ module.exports = {
         // If test mode is true, we do not need to proceed further with exporting the files
         if (!testMode) {
             writeSerializedModules(matrix, destination, overwrite);
+        }
+    },
+
+    /**
+     * Processes the sources within a collection.
+     *
+     * @param {module:collection~ModuleCollection} collection
+     * @param {object} options
+     */
+    processCollectionSources: function (collection, options) {
+        var processorOptions = {},
+            processor,
+            option;
+
+        for (processor in ModuleCollection.Source.processors) {
+            processor = ModuleCollection.Source.processors[processor];
+            option = options[processor.name];
+
+            if (option) {
+                processorOptions[processor.name] =  Array.isArray(option) ? option : (option === true ? [] : [option]);
+            }
+        }
+
+        for (var source in collection.sources) {
+            collection.sources[source].process(processorOptions);
         }
     },
 

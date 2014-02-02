@@ -1,7 +1,10 @@
-/*
+/**
+ * @fileOverview
  * This test specs runs tests on the package.json file of repository. It has a set of strict tests on the content of
  * the file as well. Any change to package.json must be accompanied by valid test case in this spec-sheet.
  */
+
+/* global describe, it, expect */
 describe ("package.json", function () {
     var WORKING_DIRECTORY = "./",
         PACKAGE_FILENAME = "package.json",
@@ -53,7 +56,7 @@ describe ("package.json", function () {
                 "integration",
                 "build",
                 "automation"
-          ]);
+            ]);
         });
 
         it ("should point to the test script", function () {

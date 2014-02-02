@@ -7,7 +7,7 @@
  * @requires collection
  * @requires io
  */
-var VERSIONSTRING = "1.1.1",
+var VERSIONSTRING = "1.1.2",
     lib = require("./lib.js"),
     ansi = require("ansi"),
     cursor = ansi(process.stdout),
@@ -35,7 +35,8 @@ module.exports = /** @lends module:jslink */ {
         verbose: false,
         help: false,
         test: false,
-        debug: false
+        debug: false,
+        quiet: false
     },
 
     /**
@@ -53,7 +54,7 @@ module.exports = /** @lends module:jslink */ {
         }
         options = lib.fill(options, module.exports.options);
         options = lib.parseJSONBooleans(options, ["recursive", "exportmap", "overwrite", "strict", "verbose", "help",
-            "test", "debug"]);
+            "test", "debug", "quiet"]);
 
         // If version query is sent then ignore all other options
         if (options.version) {
@@ -66,7 +67,10 @@ module.exports = /** @lends module:jslink */ {
             return;
         }
 
-        if (options.verbose) {
+        if (options.quiet) {
+            global.jslinkQuiet = true;
+        }
+        else if (options.verbose) {
             global.jslinkVerbose = true;
         }
 
@@ -79,13 +83,6 @@ module.exports = /** @lends module:jslink */ {
         // Notify that the processing started and also keep a note of the time.
         console.time("Preprocessing time");
         cursor.write(".");
-
-        if (global.jslinkVerbose) {
-            console.log("Processing with the following configuration:");
-            for (var prop in options) {
-                console.log(" ", prop + ":", options[prop]);
-            }
-        }
 
         // Do some sanity on the options.
         ["includePattern", "excludePattern"].forEach(function (pattern) {
@@ -146,8 +143,8 @@ module.exports = /** @lends module:jslink */ {
 
             if (options.strict) {
                 if (stat.orphanModules.length) {
-                    throw lib.format("{0} detected under strict mode.\n- {1}", lib.plural(stat.orphanModules.length,
-                        "orphan module"), stat.orphanModules.join("\n- "));
+                    throw new Error(lib.format("{0} detected under strict mode.\n- {1}",
+                        lib.plural(stat.orphanModules.length, "orphan module"), stat.orphanModules.join("\n- ")));
                 }
             }
 
@@ -155,6 +152,10 @@ module.exports = /** @lends module:jslink */ {
                 moduleIO.writeCollectionToDot(collection, options.exportmap, options.overwrite);
                 cursor.write(".");
             }
+
+
+            moduleIO.processCollectionSources(collection, options);
+            cursor.write(".");
 
             moduleIO.exportCollectionToFS(collection, options.destination, options.overwrite, options.test);
             cursor.write(".");

@@ -4,6 +4,8 @@
  */
 var E = "",
     SPC = " ",
+    BLOCK = "Block",
+    ASTERISK = "*",
     PLURAL_SUFFIX = "s",
     STRING  = "string",
     OBJECT = "object",
@@ -26,7 +28,7 @@ module.exports = lib = /** @lends module:lib */ {
      * @param {string} word
      * @returns {string}
      */
-    plural: function (num, word) {
+    plural: function(num, word) {
         return num + SPC + ((num > 1 || num < -1) && (word += PLURAL_SUFFIX), word);
     },
 
@@ -43,6 +45,67 @@ module.exports = lib = /** @lends module:lib */ {
             return args[++i] === null ? E : args[i];
         }));
         return token || E;
+    },
+
+    /**
+     * Replaces a block of array of strings with a replacement array of string. In case replacement array is shorter,
+     * it fills with default character.
+     *
+     * @param {Array} array
+     * @param {string|Array} replacement
+     * @param {Array<number>} [loc]
+     * @param {string=} [defaultChar]
+     * @returns {Array}
+     */
+    fillStringArray: function (array, replacement, loc, defaultChar) {
+        var i,
+            j,
+            ii,
+            jj;
+
+        // If replacement is a string then convert to an array.
+        if (!Array.isArray(replacement)) {
+            replacement = replacement && replacement.toString && replacement && replacement.toString().split(E) || [];
+        }
+
+        for (i = loc[0], ii = loc[1], j = 0, jj = replacement.length; i < ii; i++, j++) {
+            array[i] = (j < jj ? replacement[j] : (defaultChar || array[i]));
+        }
+
+        return array;
+    },
+
+    /**
+     * [trimStringArray description]
+     * @param {[type]} array [description]
+     * @param {Array<number>} loc
+     * @param {RegExp} regex
+     * @returns {Array}
+     */
+    trimStringArray: function (array, loc, regex) {
+        var i,
+            ii;
+
+        // left trim
+        for (i = loc[0] - 1, ii = 0; i >= ii; i--) {
+            if ((regex || /[\s\r\n]/).test(array[i])) {
+                array[i] = E;
+            }
+            else {
+                break;
+            }
+        }
+        // right trim
+        for (i = loc[1] + 1, ii = array.length; i < ii; i++) {
+            if ((regex || /[\s\r\n]/).test(array[i])) {
+                array[i] = E;
+            }
+            else {
+                break;
+            }
+        }
+
+        return array;
     },
 
     /**
@@ -166,18 +229,18 @@ module.exports = lib = /** @lends module:lib */ {
     },
 
     /**
-     * Iterate over an object and convert all string booleans into native boolean values.
+     * Iterate over an object and convert all string properties of the object into native boolean values.
      *
      * @param {object} obj
-     * @param {Array} booleans
+     * @param {Array} properties
      * @returns {object}
      */
-    parseJSONBooleans: function (obj, booleans) {
+    parseJSONBooleans: function (obj, properties) {
         // Check whether parameters are valid
-        if ((typeof obj === OBJECT) && Array.isArray(booleans) && booleans.length) {
-            booleans.forEach(function (prop) {
+        if ((typeof obj === OBJECT) && Array.isArray(properties) && properties.length) {
+            properties.forEach(function (prop) {
                 if (obj.hasOwnProperty(prop)) {
-                    obj[prop] = (/\s*true\s*/ig.test(obj[prop]));
+                    obj[prop] = !(/^\s*false\s*$/ig.test(obj[prop]));
                 }
             });
         }
@@ -186,9 +249,10 @@ module.exports = lib = /** @lends module:lib */ {
 
     /**
      * Caches function call returns
-     * @param {[type]} f [description]
-     * @param {[type]} scope [description]
-     * @returns {[type]} [description]
+     * @param {[type]} f function whose arguments cannot contain Objects and the return value is dependent on the
+     * arguments
+     * @param {[type]} scope the scope in which the function should be executed
+     * @returns {[type]} a cached function f which returns the cached value for same arguments
      */
     cacher: function (f, scope) {
         function cachedfunction() {
@@ -202,7 +266,8 @@ module.exports = lib = /** @lends module:lib */ {
             if (cache.hasOwnProperty(args)) {
                 for (i = 0, ii = count.length; i < ii; i++) {
                     if (count[i] === args) {
-                        return count.push(count.splice(i, 1)[0]);
+                        count.push(count.splice(i, 1)[0]);
+                        break;
                     }
                 }
                 return cache[args];
@@ -222,7 +287,17 @@ module.exports = lib = /** @lends module:lib */ {
      * @returns {RegExp}
      */
     getDirectivePattern: function (directive) {
-        return new RegExp(lib.format("\\@{0}\\s*([^\\@\\r\\n]*)", directive), "ig");
+        return new RegExp(lib.format("\\@{0}[\\s\\n\\r]+([^\\@\\r\\n]*)", directive), "ig");
+    },
+
+    /**
+     * Takes in a comment AST block as parameter and returns whether it is a valid jsdoc block
+     * @param {object} comment
+     * @param {boolean} ignoreignore
+     */
+    isJSDocBlock: function (comment, ignoreIgnore) {
+        return !(comment.type !== BLOCK || comment.value.charAt() !== ASTERISK ||
+            ((!ignoreIgnore) && /\@ignore[\@\s\r\n]?/ig.test(comment.value)));
     },
 
     /**
@@ -243,7 +318,7 @@ module.exports = lib = /** @lends module:lib */ {
         }
 
         // Validate type parameter
-        if (!type || type.test !== FUNCTION) {
+        if (!type || (typeof type.test !== FUNCTION)) {
             type = /./g;
         }
 
@@ -259,6 +334,10 @@ module.exports = lib = /** @lends module:lib */ {
         return order;
     },
 
+    /* jshint maxcomplexity: 15 */
+    /**
+     * @todo reduce complexity of these functions.
+     */
     /**
      * Procures a writeable file.
      *
@@ -270,7 +349,6 @@ module.exports = lib = /** @lends module:lib */ {
      * @returns {string}
      */
     writeableFile: function (path, defaultPath, overwrite, nocreate, clear) {
-
         var originalPath = path; // store it for future references.
 
         // In case path comes from cli input and is equal to boolean true, then proceed with default.
@@ -283,10 +361,10 @@ module.exports = lib = /** @lends module:lib */ {
             throw new TypeError("Path cannot be blank.");
         }
         else if (lib.isUnixDirectory(path)) {
-            throw new TypeError(lib.format("Path \"{0}\" cannot be a directory."), path);
+            throw new TypeError(lib.format("Path \"{0}\" cannot be a directory.", path));
         }
         else if (lib.isUnixHiddenPath(path)) {
-            throw new TypeError(lib.format("Cannot output to hidden file \"{0}\"."), path);
+            throw new TypeError(lib.format("Cannot output to hidden file \"{0}\".", path));
         }
         else if (lib.isUnixDirectory(defaultPath)) {
             throw new TypeError("Path (default) cannot be a directory.");
@@ -389,5 +467,15 @@ module.exports = lib = /** @lends module:lib */ {
         }
 
         return (/\/$/).test(path) ? path : path + SLASH;
+    },
+
+    /**
+     * This function outputs to console based on jslink global verbose mode
+     * @param {string} what - The message to log.
+     * @param {boolean=} [important=] - Show message even when not verbose but hide when quiet
+     */
+    log: function (what, important) {
+        (important && !global.jslinkQuiet || global.jslinkVerbose) &&
+        (what = (typeof what === FUNCTION ? what() : what.toString())) && console.log(what);
     }
 };
