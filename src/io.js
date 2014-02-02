@@ -9,6 +9,7 @@
  */
 
 var E = "",
+    DOT = ".",
 
     DEFAULT_INCLUDE_PATTERN = /.+\.js$/,
     DEFAULT_EXCLUDE_PATTERN = /^$/,
@@ -37,10 +38,12 @@ ModuleCollection.Source.addProcessors(parsers.processors);
  */
 writeSerializedModules = function (matrix, destination, overwrite) {
     var createTarget, // function
-        appendSource; // function
+        appendSource, // function
+        pwdest;
 
     // Validate the destination directory.
     destination = lib.writeableFolder(destination, DEFAULT_OUT_DESTINATION);
+    pwdest = pathUtil.relative(DOT, destination);
 
     if (!fs.statSync(destination).isDirectory()) {
         throw lib.format("Output destination is not a directory: \"{0}\"", destination);
@@ -48,17 +51,31 @@ writeSerializedModules = function (matrix, destination, overwrite) {
 
     // Adds the content of source file to target file.
     appendSource = function (source) {
+        lib.log(function () {
+            return lib.format("    - {0}", pathUtil.relative(DOT, source.path));
+        });
         fs.appendFileSync(this[0], source.content().join(E));
     };
 
     // Create or empty the file name from the bunch of targets.
     createTarget = function (targetFileName) {
-        lib.note("Writing to file: " + targetFileName);
+        var sources = this;
+
+        // In case of verbose mode, output the list of individual modules written to the export file.
+        lib.log(function () {
+            return lib.format("\n  ✔︎ {0} ({1})", targetFileName, lib.plural(sources.length, "module"));
+        });
 
         targetFileName = pathUtil.join(destination, targetFileName); // append destination to file name
         lib.writeableFile(true, targetFileName, overwrite, false, true);
-        this.forEach(appendSource, [targetFileName]);
+
+        sources.forEach(appendSource, [targetFileName]);
     };
+
+    // Announce the commencement of writing output files in case verbose mode is enabled.
+    lib.log(function () {
+        return lib.format("\nWriting export files to ./{0}", pwdest);
+    });
 
     matrix.forEach(function (bundle) {
         // Create and append files separately to reduce spatial complexity.

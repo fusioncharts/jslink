@@ -473,7 +473,7 @@ module.exports = lib = /** @lends module:lib */ {
      * This function outputs to console based on jslink global verbose mode
      * @param {string} what - The message to log.
      */
-    note: function (what) {
-        global.jslinkVerbose && console.log(what);
+    log: function (what) {
+        global.jslinkVerbose && console.log(typeof what === FUNCTION ? what() : what.toString());
     }
 };

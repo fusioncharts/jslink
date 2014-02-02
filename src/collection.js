@@ -473,11 +473,11 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
     require: function (requirement) {
         // Module cannot depend on itself and it cannot add a dependency already added.
         if (this.name === requirement.name) {
-            throw lib.format("Module {0} cannot depend on itself!", this);
+            throw new Error(lib.format("Module {0} cannot depend on itself!", this));
         }
 
         if (this.requires[requirement] || requirement.dependants[this]) {
-            throw lib.format("{1} already marked as requirement of {0}", this.name, requirement.name);
+            throw new Error(lib.format("{1} already marked as requirement of {0}", this.name, requirement.name));
         }
 
         // Store the dependency within both the connected modules.
