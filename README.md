@@ -270,6 +270,8 @@ entire process will be simulated to check for cyclic dependency and other such e
 
 ## Road Ahead
 
+- Replace CLI processor with commander package.
+- Change Array<string> contentBuffer to transformStream to improve performance.
 - Ability to simply copy non-module files from source to target.
 - Hoist `@license` blocks to top and optionally merge them.
 - Remove `@todo` blocks and in case the block has other directives, remove only `@todo` section.

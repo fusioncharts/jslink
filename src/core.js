@@ -7,7 +7,7 @@
  * @requires collection
  * @requires io
  */
-var VERSIONSTRING = "1.1.1",
+var VERSIONSTRING = "1.1.2",
     lib = require("./lib.js"),
     ansi = require("ansi"),
     cursor = ansi(process.stdout),
