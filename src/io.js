@@ -53,7 +53,7 @@ writeSerializedModules = function (matrix, destination, overwrite) {
     appendSource = function (source) {
         lib.log(function () {
             return lib.format("    - {0}", pathUtil.relative(DOT, source.path));
-        });
+        }, true);
         fs.appendFileSync(this[0], source.content().join(E));
     };
 
@@ -64,7 +64,7 @@ writeSerializedModules = function (matrix, destination, overwrite) {
         // In case of verbose mode, output the list of individual modules written to the export file.
         lib.log(function () {
             return lib.format("\n  ✔︎ {0} ({1})", targetFileName, lib.plural(sources.length, "module"));
-        });
+        }, true);
 
         targetFileName = pathUtil.join(destination, targetFileName); // append destination to file name
         lib.writeableFile(true, targetFileName, overwrite, false, true);
