@@ -17,8 +17,7 @@ var SPC = " ",
         range: true
     },
     ModuleCollection, // constructor
-    collectionTopoSort, // helper function
-    collectionAdjacencyIndex; // helper function
+    collectionTopoSort; // helper function
 
 /**
  * This function recursively traverses through modules (vertices of a DAG) and pushes them to a stack in a neatly sorted
@@ -26,51 +25,38 @@ var SPC = " ",
  *
  * @private
  * @param {module:collection~ModuleCollection.Module} module
- * @param {Array<module:collection~ModuleCollection.Module>} sortStack
+ * @param {Array<module:collection~ModuleCollection.Module>} matrix
  */
-collectionTopoSort = function (module, sortStack) {
+collectionTopoSort = function (module, _stack) {
     var item;
 
     if (module.topologicalMarker) {
         delete module.topologicalMarker;
-        throw "Cyclic dependency error discovered while parsing: " + module.name;
+        throw new Error(lib.format("Cyclic dependency error discovered while parsing {0}", module.name));
     }
 
-    if (!module.sorting) {
+    // Ensure that the _stack is present
+    if (!_stack) {
+        _stack = [];
+        _stack.order = collectionTopoSort.uid++;
+    }
+
+    if (module._topostry !== _stack.order) {
         module.topologicalMarker = true;
+
         for (item in module.requires) {
-            collectionTopoSort(module.requires[item], sortStack); // recurse
+            collectionTopoSort(module.requires[item], _stack); // recurse
         }
+
         delete module.topologicalMarker;
-        module.sorting = true;
-        // Push into the right index
-        (sortStack[module.index] || (sortStack[module.index] = [])).push(module);
+        module._topostry = _stack.order; // mark
+        _stack.push(module); // Push into the right index
     }
+
+    return _stack;
 };
 
-/**
- * This function recursively traverses through the modules and assigns them an index based on the level of bidirectional
- * connectivity.
- *
- * @private
- * @param {module:collection~ModuleCollection.Module} module
- * @param {number} index
- */
-collectionAdjacencyIndex = function (module, index) {
-    var item;
-
-    if (!module.indexing) {
-        module.index = index;
-        module.indexing = true;
-
-        for (item in module.requires) {
-            collectionAdjacencyIndex(module.requires[item], index);
-        }
-        for (item in module.dependants) {
-            collectionAdjacencyIndex(module.dependants[item], index);
-        }
-    }
-};
+collectionTopoSort.uid = 1; // set counter for every new trace.
 
 /**
  * Represents a collection of modules that have ability to depend on each other. The class maintains the dependency
@@ -247,31 +233,18 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
      * @returns {Array<Array>}
      */
     serialize: function () {
-        var sortStack = [], // array to hold all the sorted modules.
-            adjacencyPoint = 0,
-            modules = this.modules,
+        var matrix = [], // array to hold all the sorted modules.
+            modules,
             module;
 
-        // Iterate over all modules, index them and run topological sort. Indexing will always go faster than sorting
-        // since index happens on both ingress and egress edges at the same time, as such 2x the cycle of sorting.
+        // Iterate over all modules, index them and run topological sort. Indexing can happen simultaneously as sorting
+        // since they are happening on a single trace at a time
+        modules = this.exports;
         for (module in modules) {
-            module = modules[module];
-            if (!module.indexing) {
-                collectionAdjacencyIndex(module, adjacencyPoint++);
-            }
-            if (!module.sorting) {
-                collectionTopoSort(module, sortStack);
-            }
+            matrix.push(collectionTopoSort(modules[module]));
         }
 
-        // Iterate over modules once more to remove all sorting flags. This is unneeded if the intention is to sort
-        // once only.
-        for (module in modules) {
-            delete modules[module].sorting;
-            delete modules[module].indexing;
-        }
-
-        return sortStack;
+        return matrix;
     },
 
 
