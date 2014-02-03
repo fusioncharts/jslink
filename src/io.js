@@ -8,7 +8,7 @@
  * @requires parsers
  */
 
-var E = "",
+var // E = "",
     DOT = ".",
 
     DEFAULT_INCLUDE_PATTERN = /.+\.js$/,
@@ -54,7 +54,12 @@ writeSerializedModules = function (matrix, destination, overwrite) {
         lib.log(function () {
             return lib.format("    - {0}", pathUtil.relative(DOT, source.path));
         }, true);
+
+        /**
+         * @todo use this method when contentTransform using buffer is ready
         fs.appendFileSync(this[0], source.content().join(E));
+         */
+        fs.appendFileSync(this[0], source.raw);
     };
 
     // Create or empty the file name from the bunch of targets.
@@ -110,6 +115,10 @@ module.exports = {
             throw new Error(lib.format("Source path \"{0}\" does not exist or is not readable.", path));
         }
 
+        lib.log(function () {
+            return lib.format("\nReading files from: \"{0}\"", path);
+        });
+
         // Iterate over the source directories provided the root path exists.
         walkdir.sync(path, {
             /*jshint camelcase: false */// turn off since walkdir is 3rd-party.
@@ -117,7 +126,7 @@ module.exports = {
             no_recurse: !recurse
             /*jshint camelcase: true */
         }, function (path, stat) {
-            var fileName;
+            var pwdRelativePath;
 
             // Increment counter of total file processing.
             collection._statFilesTotal++;
@@ -128,8 +137,8 @@ module.exports = {
             }
             // Extract the name to apply io patterns on. The patterns will not work out if full path is passed to
             // pattern matching.
-            fileName = pathUtil.basename(path);
-            if (exclude.test(fileName) || !include.test(fileName)) {
+            pwdRelativePath = pathUtil.relative(DOT, path);
+            if (exclude.test(pwdRelativePath) || !include.test(pwdRelativePath)) {
                 return;
             }
 
@@ -141,6 +150,10 @@ module.exports = {
             // counter.
             collection._statFilesError--;
             collection._statFilesProcessed++; // increment success counter
+
+            lib.log(function () {
+                return lib.format(" - {0}", pwdRelativePath);
+            });
         });
 
         return collection;
