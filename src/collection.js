@@ -14,7 +14,7 @@ var SPC = " ",
 
     esprimaOptions = {
         comment: true,
-        range: true
+        range: true // range mode is needed for easier buffer manipulation.
     },
     ModuleCollection, // constructor
     collectionTopoSort; // helper function
@@ -663,6 +663,11 @@ lib.copy(ModuleCollection.Source.prototype, /** @lends module:collection~ModuleC
      * @param {Object} invokedProcessors
      */
     process: function (invokedProcessors) {
+        // Do not process if no processor has been invoked
+        if (!(typeof invokedProcessors === "object" && Object.keys(invokedProcessors).length)) {
+            return;
+        }
+
         var processor,
             scope = {
                 content: this.content()
