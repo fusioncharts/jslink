@@ -8,8 +8,9 @@
  * @requires parsers
  */
 
-var // E = "",
+var E = "",
     DOT = ".",
+    HASH = "#",
 
     DEFAULT_INCLUDE_PATTERN = /.+\.js$/,
     DEFAULT_EXCLUDE_PATTERN = /^$/,
@@ -28,6 +29,7 @@ var // E = "",
 // Add the directives to the Source processor
 ModuleCollection.Source.addDirectives(parsers.directives);
 ModuleCollection.Source.addProcessors(parsers.processors);
+ModuleCollection.Source.addMacros(parsers.macros);
 
 /**
  * Writes a 2d array of modules to a set of files with the module source contents.
@@ -36,7 +38,10 @@ ModuleCollection.Source.addProcessors(parsers.processors);
  * @param {string=} destination
  * @param {boolean=} overwrite
  */
-writeSerializedModules = function (matrix, destination, overwrite) {
+writeSerializedModules = function (matrix, destination, overwrite, passthrough) {
+    /**
+     * @todo use stream and streamTransforms for faster operations
+     */
     var createTarget, // function
         appendSource, // function
         pwdest;
@@ -55,11 +60,7 @@ writeSerializedModules = function (matrix, destination, overwrite) {
             return lib.format("    - {0}", pathUtil.relative(DOT, source.path));
         }, true);
 
-        /**
-         * @todo use this method when contentTransform using buffer is ready
-        fs.appendFileSync(this[0], source.content().join(E));
-         */
-        fs.appendFileSync(this[0], source.raw);
+        fs.appendFileSync(this[0], passthrough ? source.raw : source.content().join(E));
     };
 
     // Create or empty the file name from the bunch of targets.
@@ -159,7 +160,7 @@ module.exports = {
         return collection;
     },
 
-    exportCollectionToFS: function (collection, destination, overwrite, testMode) {
+    exportCollectionToFS: function (collection, destination, overwrite, testMode, passthrough) {
         var serialized = collection.serialize(),
             matrix = [];
 
@@ -201,7 +202,7 @@ module.exports = {
 
         // If test mode is true, we do not need to proceed further with exporting the files
         if (!testMode) {
-            writeSerializedModules(matrix, destination, overwrite);
+            writeSerializedModules(matrix, destination, overwrite, passthrough);
         }
     },
 
@@ -212,21 +213,50 @@ module.exports = {
      * @param {object} options
      */
     processCollectionSources: function (collection, options) {
-        var processorOptions = {},
-            processor,
-            option;
+        var //processorOptions = {},
+            //processor,
+            option,
+            macros = {},
+            item;
 
-        for (processor in ModuleCollection.Source.processors) {
-            processor = ModuleCollection.Source.processors[processor];
-            option = options[processor.name];
+        // for (processor in ModuleCollection.Source.processors) {
+        //     processor = ModuleCollection.Source.processors[processor];
+        //     option = options[processor.name];
 
-            if (option) {
-                processorOptions[processor.name] =  Array.isArray(option) ? option : (option === true ? [] : [option]);
+        //     if (option) {
+        //         processorOptions[processor.name] =  Array.isArray(option) ? option : (option === true ? [] :
+        //              [option]);
+        //     }
+        // }
+
+        // for (var source in collection.sources) {
+        //     collection.sources[source].process(processorOptions);
+        // }
+
+        Object.keys(options).forEach(function (item) {
+            if (item.charAt() !== HASH) {
+                return;
             }
-        }
 
-        for (var source in collection.sources) {
-            collection.sources[source].process(processorOptions);
+            /**
+             * @todo Use better split technique to allow escaping of the separator characters
+             */
+            option = options[item].split(/\s*\;\s*/);
+            item = item.substr(1);
+            macros[item] = {};
+
+            option.forEach(function (definition) {
+                definition = definition.split(/\s*\:\s*/);
+                if (macros[item][definition[0]]) {
+                    throw new Error(lib.format("Duplicate macro definition of \"{0}\" for macro \"{1}\".",
+                        definition[0], item));
+                }
+                macros[item][definition[0]] = definition[1];
+            });
+        });
+
+        for (item in collection.sources) {
+            collection.sources[item].macro(macros);
         }
     },
 

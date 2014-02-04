@@ -59,6 +59,19 @@ module.exports = {
         }
     },
 
+    macros: {
+        define: function (args) {
+            var content = this.source.content(),
+                i,
+                ii;
+
+            for (i = this.comment.range[0], ii = this.comment.range[1]; i < ii; i++) {
+                content[i] = E;
+            }
+            content[this.comment.range[0]] = this.definition[args] || E;
+        },
+    },
+
     processors: {
         "removeblock": function () {
             var blankArray = [],

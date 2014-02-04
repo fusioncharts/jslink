@@ -202,8 +202,10 @@ of commandline parameters that can be used to configure jslink.
 `--recursive`       |Look into all sub-directories while reading source directory
 `--source`          |The source directory to read from
 `--conf`            |jslink configuration JSON file location
+`--passthrough`     |Bypass all processing and only perform module dependency trace (concat) to boost performance
 `--test`            |Run jslink in test mode without writing to file-system
 `--verbose`         |Will output (hopefully) useful information during the linking process
+`--quiet`           |Prevent console output of any activity
 `--help`            |Outputs the usage help text to terminal
 `--version`         |Shows the jslink version being used
 

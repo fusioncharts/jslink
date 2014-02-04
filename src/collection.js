@@ -7,6 +7,7 @@
  */
 var SPC = " ",
     E = "",
+    HASH = "#",
 
     lib = require("./lib.js"),
     fs = require("fs"),
@@ -14,6 +15,7 @@ var SPC = " ",
 
     esprimaOptions = {
         comment: true,
+        loc: true,
         range: true // range mode is needed for easier buffer manipulation.
     },
     ModuleCollection, // constructor
@@ -557,6 +559,9 @@ ModuleCollection.Source.Processor = function (definition, evaluator) {
     this.name = definition.split(SPC)[0];
 };
 
+/**
+ * @todo  Change all addX functions to single add("x", ...) API.
+ */
 lib.copy(ModuleCollection.Source, /** @lends module:collection~ModuleCollection.Source */ {
     /**
      * @type {Array<module:collection~ModuleCollection.Source.Directive>}
@@ -567,6 +572,11 @@ lib.copy(ModuleCollection.Source, /** @lends module:collection~ModuleCollection.
      * @type {Object<module:collection~ModuleCollection.Source.Processor}
      */
     processors: {},
+
+    /**
+     * @todo jsdoc
+     */
+    macros: {},
 
     /**
      * @param {string} definition
@@ -610,6 +620,31 @@ lib.copy(ModuleCollection.Source, /** @lends module:collection~ModuleCollection.
     addProcessors: function (processors) {
         for (var definition in processors) {
             this.addProcessor(definition, processors[definition]);
+        }
+    },
+
+    /**
+     * @param {string} definition
+     * @param {function} evaluator
+     */
+    addMacro: function (definition, evaluator) {
+        if (typeof evaluator !== "function") {
+            throw new Error("Macro processor evaluator cannot be not a function!");
+        }
+
+        if (this.macros[definition]) {
+            throw new Error("Duplicate macro processor.");
+        }
+
+        this.macros[definition] = evaluator;
+    },
+
+    /**
+     * @todo jsdoc
+     */
+    addMacros: function (processors) {
+        for (var definition in processors) {
+            this.addMacro(definition, processors[definition]);
         }
     }
 });
@@ -657,6 +692,39 @@ lib.copy(ModuleCollection.Source.prototype, /** @lends module:collection~ModuleC
                 }())); // end comment replacer callback
             }); // end order forEach
         }); // end comment forEach
+    },
+
+    macro: function (definitions) {
+        var scope = {
+                source: this
+            };
+
+        // Iterate on each block
+        this.tree().comments.forEach(function (comment) {
+            var macro;
+
+            if (!lib.isJSDocBlock(comment, true, HASH)) {
+                return;
+            }
+
+            if ((macro = comment.value.match(/\#([^\s\n\r]+)([\w\W]*)/))) {
+                macro.name = macro[1].trim();
+                macro.args = (macro[2] || E).trim();
+
+                // Raise error if an unknown macro is found in source code
+                if (!ModuleCollection.Source.macros[macro.name]) {
+                    throw new Error(lib.format("Unknown macro \"{0}\".\n    at {1}:{2}:{3}", macro.name,
+                        scope.source.path, comment.loc.start.line, comment.loc.start.column));
+                }
+
+                scope.comment = comment;
+                scope.definition = definitions[macro.name];
+
+                ModuleCollection.Source.macros[macro.name].call(scope, macro.args);
+            }
+
+
+        });
     },
 
     /**

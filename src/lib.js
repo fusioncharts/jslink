@@ -181,7 +181,7 @@ module.exports = lib = /** @lends module:lib */ {
         while (arg = args.shift()) {
 
             if (/^\-\-[^\-]*/g.test(arg)) {
-                arg.replace(/^\-\-([a-z]*)\=?([\s\S]*)?$/i, replacer);
+                arg.replace(/^\-\-([a-z#]*)\=?([\s\S]*)?$/i, replacer);
             }
             // In case it is not an option object, we add it to default option name.
             else if (don) {
@@ -293,10 +293,11 @@ module.exports = lib = /** @lends module:lib */ {
     /**
      * Takes in a comment AST block as parameter and returns whether it is a valid jsdoc block
      * @param {object} comment
-     * @param {boolean} ignoreignore
+     * @param {boolean=} ignoreignore
+     * @param {string=} [identifier]
      */
-    isJSDocBlock: function (comment, ignoreIgnore) {
-        return !(comment.type !== BLOCK || comment.value.charAt() !== ASTERISK ||
+    isJSDocBlock: function (comment, ignoreIgnore, identifier) {
+        return !(comment.type !== BLOCK || comment.value.charAt() !== (identifier || ASTERISK) ||
             ((!ignoreIgnore) && /\@ignore[\@\s\r\n]?/ig.test(comment.value)));
     },
 

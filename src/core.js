@@ -32,6 +32,7 @@ module.exports = /** @lends module:jslink */ {
         strict: true,
         exportmap: false,
         overwrite: false,
+        passthrough: false,
         verbose: false,
         help: false,
         test: false,
@@ -54,7 +55,7 @@ module.exports = /** @lends module:jslink */ {
         }
         options = lib.fill(options, module.exports.options);
         options = lib.parseJSONBooleans(options, ["recursive", "exportmap", "overwrite", "strict", "verbose", "help",
-            "test", "debug", "quiet"]);
+            "test", "debug", "quiet", "passthrough"]);
 
         // If version query is sent then ignore all other options
         if (options.version) {
@@ -153,11 +154,13 @@ module.exports = /** @lends module:jslink */ {
                 cursor.write(".");
             }
 
+            if (!options.passthrough) {
+                moduleIO.processCollectionSources(collection, options);
+                cursor.write(".");
+            }
 
-            moduleIO.processCollectionSources(collection, options);
-            cursor.write(".");
-
-            moduleIO.exportCollectionToFS(collection, options.destination, options.overwrite, options.test);
+            moduleIO.exportCollectionToFS(collection, options.destination, options.overwrite, options.test,
+                options.passthrough);
             cursor.write(".");
         }
         catch (err) {
