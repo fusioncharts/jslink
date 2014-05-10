@@ -304,3 +304,5 @@ entire process will be simulated to check for cyclic dependency and other such e
 [drone-badge]: https://drone.io/github.com/fusioncharts/jslink/status.png
 [travis-badge]: https://travis-ci.org/fusioncharts/jslink.png?branch=master
 [npminstall-badge]: https://nodei.co/npm/jslink.png?compact=true
+
+[![Analytics](https://ga-beacon.appspot.com/UA-45124206-2/jslink/index)](https://github.com/igrigorik/ga-beacon)
