@@ -2,19 +2,19 @@
  * This module contains all the helper and library functions that are required by various modules of `jslink`.
  * @module lib
  */
-var E = "",
-    SPC = " ",
-    BLOCK = "Block",
-    ASTERISK = "*",
-    PLURAL_SUFFIX = "s",
-    STRING  = "string",
-    OBJECT = "object",
-    FUNCTION = "function",
-    SLASH = "/",
-    DOTSLASH = "./",
+var E = '',
+    SPC = ' ',
+    BLOCK = 'Block',
+    ASTERISK = '*',
+    PLURAL_SUFFIX = 's',
+    STRING = 'string',
+    OBJECT = 'object',
+    FUNCTION = 'function',
+    SLASH = '/',
+    DOTSLASH = './',
 
-    fs = require("fs"),
-    pathUtil = require("path"),
+    fs = require('fs'),
+    pathUtil = require('path'),
 
     lib;
 
@@ -28,7 +28,7 @@ module.exports = lib = /** @lends module:lib */ {
      * @param {string} word
      * @returns {string}
      */
-    plural: function(num, word) {
+    plural: function (num, word) {
         return num + SPC + ((num > 1 || num < -1) && (word += PLURAL_SUFFIX), word);
     },
 
@@ -39,9 +39,10 @@ module.exports = lib = /** @lends module:lib */ {
      * @param {...string} params
      * @returns {string}
      */
-    format: function(token, params) {
+    format: function (token, params) {
         var args = Array.isArray(params) ? [0].concat(params) : arguments;
-        token && (typeof token === STRING) && args.length - 1 && (token = token.replace(/\{(\d+)\}/g, function(str, i) {
+        token && (typeof token === STRING) && args.length - 1 && (token = token.replace(/\{(\d+)\}/g, function (
+            str, i) {
             return args[++i] === null ? E : args[i];
         }));
         return token || E;
@@ -119,7 +120,7 @@ module.exports = lib = /** @lends module:lib */ {
     stringLike: function (str) {
         // Module name has to be valid and cannot be blank.
         if (!(str ? typeof str.toString === FUNCTION : typeof str === STRING)) {
-            throw new TypeError("Not a valid string: " + str);
+            throw new TypeError('Not a valid string: ' + str);
         }
         // Sanitise the name for further processing - like trim it!
         return str.toString().trim();
@@ -174,7 +175,8 @@ module.exports = lib = /** @lends module:lib */ {
 
             // If the option already exists, push to the values array otherwise create a new values array. In case
             // this option was discovered for the first time, we pust it as a single item of an array.
-            out.hasOwnProperty($1) && (out[$1].push ? out[$1] : (out[$1] = [out[$1]])).push($2) || (out[$1] = $2);
+            out.hasOwnProperty($1) && (out[$1].push ? out[$1] : (out[$1] = [out[$1]])).push($2) || (out[$1] =
+                $2);
         };
 
         // Loop through arguments and prepare options object.
@@ -224,7 +226,7 @@ module.exports = lib = /** @lends module:lib */ {
             return JSON.parse(fs.readFileSync(path));
         }
         catch (error) {
-            throw new Error(lib.format("Unable to read file: {0}\n{1}", path, error));
+            throw new Error(lib.format('Unable to read file: {0}\n{1}', path, error));
         }
     },
 
@@ -257,7 +259,7 @@ module.exports = lib = /** @lends module:lib */ {
     cacher: function (f, scope) {
         function cachedfunction() {
             var arg = Array.prototype.slice.call(arguments, 0),
-                args = arg.join("\u2400"),
+                args = arg.join('\u2400'),
                 cache = cachedfunction.cache = cachedfunction.cache || {},
                 count = cachedfunction.count = cachedfunction.count || [],
                 i,
@@ -287,7 +289,7 @@ module.exports = lib = /** @lends module:lib */ {
      * @returns {RegExp}
      */
     getDirectivePattern: function (directive) {
-        return new RegExp(lib.format("\\@{0}[\\s\\n\\r]+([^\\@\\r\\n]*)", directive), "ig");
+        return new RegExp(lib.format('\\@{0}[\\s\\n\\r]+([^\\@\\r\\n]*)', directive), 'ig');
     },
 
     /**
@@ -314,7 +316,7 @@ module.exports = lib = /** @lends module:lib */ {
 
         // If there is no object, there is no order!
         if (typeof object !== OBJECT) {
-            throw new Error("Cannot prepare ordered key for non-object variables.");
+            throw new Error('Cannot prepare ordered key for non-object variables.');
         }
 
         // Validate type parameter
@@ -358,16 +360,16 @@ module.exports = lib = /** @lends module:lib */ {
 
         // Validate parameters so as to ensure that the path and the alternative defaults can be processed.
         if (!path || !defaultPath) {
-            throw new TypeError("Path cannot be blank.");
+            throw new TypeError('Path cannot be blank.');
         }
         else if (lib.isUnixDirectory(path)) {
-            throw new TypeError(lib.format("Path \"{0}\" cannot be a directory.", path));
+            throw new TypeError(lib.format('Path "{0}" cannot be a directory.', path));
         }
         else if (lib.isUnixHiddenPath(path)) {
-            throw new TypeError(lib.format("Cannot output to hidden file \"{0}\".", path));
+            throw new TypeError(lib.format('Cannot output to hidden file "{0}".', path));
         }
         else if (lib.isUnixDirectory(defaultPath)) {
-            throw new TypeError("Path (default) cannot be a directory.");
+            throw new TypeError('Path (default) cannot be a directory.');
         }
 
         // In case the output path is a directory, use the filename from default path.
@@ -384,7 +386,7 @@ module.exports = lib = /** @lends module:lib */ {
             // or not.
             if (fs.statSync(path).isFile()) {
                 if (overwrite === false) {
-                    throw new Error(lib.format("Cannot overwrite \"{0}\"", originalPath));
+                    throw new Error(lib.format('Cannot overwrite "{0}"', originalPath));
                 }
                 else if (clear) {
                     fs.writeFileSync(path, E);
@@ -392,7 +394,7 @@ module.exports = lib = /** @lends module:lib */ {
             }
             // Otherwise... it is either a directory or the world's end!
             else {
-                throw new TypeError(lib.format("The output path \"{0}\" does not point to a file.", originalPath));
+                throw new TypeError(lib.format('The output path "{0}" does not point to a file.', originalPath));
             }
         }
         // When file does not exist then we would need to create the directory tree (if provided and allowed)
@@ -401,7 +403,7 @@ module.exports = lib = /** @lends module:lib */ {
             lib.writeableFolder(pathUtil.dirname(path) + SLASH, pathUtil.dirname(defaultPath) + SLASH);
             // We create the file so that it can be further used to write or append.
             if (!nocreate) {
-                clear === true ? fs.writeFileSync(path, E) : fs.openSync(path, "w");
+                clear === true ? fs.writeFileSync(path, E) : fs.openSync(path, 'w');
             }
         }
 
@@ -427,20 +429,20 @@ module.exports = lib = /** @lends module:lib */ {
 
         // Validate parameters so as to ensure that the path and the alternative defaults can be processed.
         if (!defaultPath) {
-            throw new TypeError("Path cannot be blank.");
+            throw new TypeError('Path cannot be blank.');
         }
         else if (!path) {
             path = defaultPath;
         }
 
         if (!lib.isUnixDirectory(path)) {
-            throw new TypeError(lib.format("Path \"{0}\" cannot be a file."), path);
+            throw new TypeError(lib.format('Path "{0}" cannot be a file.'), path);
         }
         else if (lib.isUnixHiddenPath(path)) {
-            throw new TypeError(lib.format("Cannot output to hidden file \"{0}\"."), path);
+            throw new TypeError(lib.format('Cannot output to hidden file "{0}".'), path);
         }
         else if (!lib.isUnixDirectory(defaultPath)) {
-            throw new TypeError("Path (default) cannot be a file.");
+            throw new TypeError('Path (default) cannot be a file.');
         }
 
         path = pathUtil.resolve(path.toString());
@@ -453,7 +455,7 @@ module.exports = lib = /** @lends module:lib */ {
             if (fs.existsSync(dir)) {
                 // Check whether the last existing member of the dir tree is not a file.
                 if (!fs.statSync(dir).isDirectory()) {
-                    throw new Error(lib.format("Cannot write to \"{0}\" since \"{1}\" is not a directory.",
+                    throw new Error(lib.format('Cannot write to "{0}" since "{1}" is not a directory.',
                         originalPath, dir));
                 }
                 break;

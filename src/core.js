@@ -7,12 +7,12 @@
  * @requires collection
  * @requires io
  */
-var VERSIONSTRING = "1.1.3",
-    lib = require("./lib.js"),
-    ansi = require("ansi"),
+var VERSIONSTRING = '1.1.3',
+    lib = require('./lib.js'),
+    ansi = require('ansi'),
     cursor = ansi(process.stdout),
-    ModuleCollection = require("./collection.js"),
-    moduleIO = require("./io.js");
+    ModuleCollection = require('./collection.js'),
+    moduleIO = require('./io.js');
 
 
 module.exports = /** @lends module:jslink */ {
@@ -28,7 +28,7 @@ module.exports = /** @lends module:jslink */ {
         recursive: false,
         includePattern: /.+\.js$/,
         excludePattern: /^$/,
-        destination: "out/",
+        destination: 'out/',
         strict: true,
         exportmap: false,
         overwrite: false,
@@ -45,20 +45,22 @@ module.exports = /** @lends module:jslink */ {
     cli: function (argv) { /** @todo refactor */
         // Parse all command-line arguments as an object and populate the unspecified properties with default
         // options.
-        var options = lib.argsArray2Object(argv.slice(2), "source"),
+        var options = lib.argsArray2Object(argv.slice(2), 'source'),
             conf;
 
         // Check whether to read options from a configuration file.
-        if (options.conf && (typeof (conf = lib.readJSONFromFile(options.conf)).options === "object")) {
+        if (options.conf && (typeof (conf = lib.readJSONFromFile(options.conf)).options === 'object')) {
             options = lib.fill(options, conf.options);
         }
         options = lib.fill(options, module.exports.options);
-        options = lib.parseJSONBooleans(options, ["recursive", "exportmap", "overwrite", "strict", "verbose", "help",
-            "test", "debug", "quiet"]);
+        options = lib.parseJSONBooleans(options, [
+            'recursive', 'exportmap', 'overwrite', 'strict', 'verbose', 'help', 'test', 'debug',
+            'quiet'
+        ]);
 
         // If version query is sent then ignore all other options
         if (options.version) {
-            console.log("jslink " + VERSIONSTRING);
+            console.log('jslink ' + VERSIONSTRING);
             return;
         }
 
@@ -77,33 +79,34 @@ module.exports = /** @lends module:jslink */ {
         // If the test flag is set to true, we do not initiate export of the files. Though we need to calculate
         // dependency in order to show results of cyclic errors
         if (options.test) {
-            cursor.write ("Running in test mode.\n");
+            cursor.write('Running in test mode.\n');
         }
 
         // Notify that the processing started and also keep a note of the time.
-        console.time("Preprocessing time");
-        cursor.write(".");
+        console.time('Preprocessing time');
+        cursor.write('.');
 
         // Do some sanity on the options.
-        ["includePattern", "excludePattern"].forEach(function (pattern) {
+        ['includePattern', 'excludePattern'].forEach(function (pattern) {
             if (options[pattern] && !options[pattern].test) {
                 options[pattern] = new RegExp(options[pattern]);
             }
         });
 
         return this.parse(options, function (error, collection, stat) { // callback for output to console
-            cursor.reset().write("\n");
+            cursor.reset().write('\n');
             if (error) {
-                cursor.red().write((error.message && error.message || error) + "\n");
+                cursor.red().write((error.message && error.message || error) + '\n');
             }
             else if (collection) {
                 cursor.green()
-                .write(lib.format("{0} with {1} processed for {2}.\n", lib.plural(stat.filesProcessed || 0, "file"),
-                    lib.plural(stat.definedModules.length || 0, "module"),
-                    lib.plural(stat.numberOfExports || 0, "export directive")));
+                    .write(lib.format('{0} with {1} processed for {2}.\n', lib.plural(stat.filesProcessed ||
+                            0, 'file'),
+                        lib.plural(stat.definedModules.length || 0, 'module'),
+                        lib.plural(stat.numberOfExports || 0, 'export directive')));
 
             }
-            console.timeEnd("Preprocessing time");
+            console.timeEnd('Preprocessing time');
             cursor.reset();
             // throw error in console for debug mode so that call stack/trace is visible.
             if (options.debug && error) {
@@ -137,28 +140,29 @@ module.exports = /** @lends module:jslink */ {
                         options.includePattern, options.excludePattern);
                 }
             }
-            cursor.write(".");
+            cursor.write('.');
             stat = collection.analyse();
-            cursor.write(".");
+            cursor.write('.');
 
             if (options.strict) {
                 if (stat.orphanModules.length) {
-                    throw new Error(lib.format("{0} detected under strict mode.\n- {1}",
-                        lib.plural(stat.orphanModules.length, "orphan module"), stat.orphanModules.join("\n- ")));
+                    throw new Error(lib.format('{0} detected under strict mode.\n- {1}',
+                        lib.plural(stat.orphanModules.length, 'orphan module'), stat.orphanModules.join(
+                            '\n- ')));
                 }
             }
 
             if (options.exportmap) {
                 moduleIO.writeCollectionToDot(collection, options.exportmap, options.overwrite);
-                cursor.write(".");
+                cursor.write('.');
             }
 
 
             moduleIO.processCollectionSources(collection, options);
-            cursor.write(".");
+            cursor.write('.');
 
             moduleIO.exportCollectionToFS(collection, options.destination, options.overwrite, options.test);
-            cursor.write(".");
+            cursor.write('.');
         }
         catch (err) {
             error = err;
@@ -181,23 +185,23 @@ module.exports = /** @lends module:jslink */ {
     help: function () {
 
         cursor
-            // Split out the version
+        // Split out the version
             .reset()
-            .write("jslink <source-location> [<source-location>...] [--option[=<value>]...]\n\n")
+            .write('jslink <source-location> [<source-location>...] [--option[=<value>]...]\n\n')
 
-            // Show commandline usage instruction
-            .underline()
-            .write("Parameters").reset().write(":\n")
+        // Show commandline usage instruction
+        .underline()
+            .write('Parameters').reset().write(':\n')
 
-            .write("--destination=<location>\tThe output directory where all processed files will be saved\n")
-            .write("--includePattern=<regex>\tWhite-list of input files names from source directory\n")
-            .write("--excludePattern=<regex>\tBlack-list of input files names from source directory\n")
-            .write("--source=<location> (...)\tThe source directory to read modules from\n")
-            .write("--conf=<location>\t\tjslink configuration JSON file location\n\n")
-            .write("--recursive\tLook into all sub-directories while reading source directory\n")
-            .write("--test\t\tRun jslink in test mode without writing to file-system\n")
-            .write("--verbose\tWill output (hopefully) useful information during the linking process\n")
-            .write("--help\t\tOutputs the usage help text to terminal\n")
-            .write("--version\tShows the jslink version being used\n\n");
+        .write('--destination=<location>\tThe output directory where all processed files will be saved\n')
+            .write('--includePattern=<regex>\tWhite-list of input files names from source directory\n')
+            .write('--excludePattern=<regex>\tBlack-list of input files names from source directory\n')
+            .write('--source=<location> (...)\tThe source directory to read modules from\n')
+            .write('--conf=<location>\t\tjslink configuration JSON file location\n\n')
+            .write('--recursive\tLook into all sub-directories while reading source directory\n')
+            .write('--test\t\tRun jslink in test mode without writing to file-system\n')
+            .write('--verbose\tWill output (hopefully) useful information during the linking process\n')
+            .write('--help\t\tOutputs the usage help text to terminal\n')
+            .write('--version\tShows the jslink version being used\n\n');
     }
 };

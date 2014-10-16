@@ -16,11 +16,13 @@ var matchers = {
     toMatchSemVer: function () {
         /* jshint ignore:start */
         return !!(this.actual && this.actual.toString &&
-            this.actual.toString().match(/^((\d+)\.(\d+)\.(\d+))(?:-([\dA-Za-z\-]+(?:\.[\dA-Za-z\-]+)*))?(?:\+([\dA-Za-z\-]+(?:\.[\dA-Za-z\-]+)*))?$/));
+            this.actual.toString().match(
+                /^((\d+)\.(\d+)\.(\d+))(?:-([\dA-Za-z\-]+(?:\.[\dA-Za-z\-]+)*))?(?:\+([\dA-Za-z\-]+(?:\.[\dA-Za-z\-]+)*))?$/
+            ));
         /* jshint ignore:end */
     }
 };
 
-beforeEach(function() {
+beforeEach(function () {
     this.addMatchers(matchers);
 });
