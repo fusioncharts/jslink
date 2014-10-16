@@ -5,12 +5,12 @@
  *
  * @requires lib
  */
-var SPC = " ",
-    E = "",
+var SPC = ' ',
+    E = '',
 
-    lib = require("./lib.js"),
-    fs = require("fs"),
-    esprima = require("esprima"),
+    lib = require('./lib.js'),
+    fs = require('fs'),
+    esprima = require('esprima'),
 
     esprimaOptions = {
         comment: true,
@@ -32,7 +32,7 @@ collectionTopoSort = function (module, _stack) {
 
     if (module.topologicalMarker) {
         delete module.topologicalMarker;
-        throw new Error(lib.format("Cyclic dependency error discovered while parsing {0}", module.name));
+        throw new Error(lib.format('Cyclic dependency error discovered while parsing {0}', module.name));
     }
 
     // Ensure that the _stack is present
@@ -125,7 +125,7 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
      */
     getSource: function (source) {
         if (!this.sources[lib.stringLike(source)]) {
-            throw new Error("Source not defined: " + source);
+            throw new Error('Source not defined: ' + source);
         }
 
         return this.sources[source];
@@ -150,7 +150,7 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
      */
     addModule: function (name, source) {
         if (!(source = this.getSource(source))) {
-            throw new Error("Source not predefined for module: " + name);
+            throw new Error('Source not predefined for module: ' + name);
         }
 
         return this.get(name, true).define(source);
@@ -183,7 +183,8 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
      * @returns {module:collection~ModuleCollection.Dependency}
      */
     connect: function (module, dependency) {
-        return (this.dependencies.push((this._recentDependency = new ModuleCollection.Dependency(this.get(module, true),
+        return (this.dependencies.push((this._recentDependency = new ModuleCollection.Dependency(this.get(
+                module, true),
             this.get(dependency, true)))), ++this.numberOfDependencies, this._recentDependency);
     },
 
@@ -249,7 +250,7 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
 
 
     toString: function () {
-        var out = "digraph jslink {\n",
+        var out = 'digraph jslink {\n',
             module,
             dependant;
 
@@ -259,15 +260,15 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
             // In case there are no requirements, output the module as an isolated one.
             if (module.numberOfDependants) {
                 for (dependant in module.dependants) {
-                    out += lib.format("\"{0}\"->\"{1}\";\n", module, dependant);
+                    out += lib.format('"{0}"->"{1}";\n', module, dependant);
                 }
             }
             else {
-                out += "\"" + module.name + "\";\n";
+                out += '"' + module.name + '";\n';
             }
 
         }
-        return (out += "}");
+        return (out += '}');
     }
 });
 
@@ -316,8 +317,8 @@ ModuleCollection.Dependency = function (module, requirement) {
 
 lib.copy(ModuleCollection.Dependency.prototype, /** @lends module:collection~ModuleCollection.Dependency.prototype */ {
     toString: function () {
-        return lib.format("\"{0}\"->\"{1}\";", this.module.toString().replace(/\"/g, "\\\""),
-            this.require.toString().replace(/\"/g, "\\\""));
+        return lib.format('"{0}"->"{1}";', this.module.toString().replace(/\"/g, '\\"'),
+            this.require.toString().replace(/\"/g, '\\"'));
     }
 });
 
@@ -347,7 +348,7 @@ ModuleCollection.Module = function (name, source) {
 
     // Validate the name to not be blank.
     if (!this.name) {
-        throw new TypeError("Module name cannot be blank.");
+        throw new TypeError('Module name cannot be blank.');
     }
     /**
      * Stores all modules that this module needs/requires. (Verices that head this.)
@@ -399,11 +400,12 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
     define: function (source) {
         // Redefinition is not allowed.
         if (this.defined()) {
-            throw lib.format("Duplicate definition of {0} at: {1}\n\nAlready defined by {2}", this.name, source,
+            throw lib.format('Duplicate definition of {0} at: {1}\n\nAlready defined by {2}', this.name,
+                source,
                 this.source);
         }
         if (!(source instanceof ModuleCollection.Source)) {
-            throw "Definition accepts instance of ModuleCollection.Source only.";
+            throw 'Definition accepts instance of ModuleCollection.Source only.';
         }
         this.source = source; // store
         return this; // chain
@@ -446,11 +448,11 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
     require: function (requirement) {
         // Module cannot depend on itself and it cannot add a dependency already added.
         if (this.name === requirement.name) {
-            throw new Error(lib.format("Module {0} cannot depend on itself!", this));
+            throw new Error(lib.format('Module {0} cannot depend on itself!', this));
         }
 
         if (this.requires[requirement] || requirement.dependants[this]) {
-            throw new Error(lib.format("{1} already marked as requirement of {0}", this.name, requirement.name));
+            throw new Error(lib.format('{1} already marked as requirement of {0}', this.name, requirement.name));
         }
 
         // Store the dependency within both the connected modules.
@@ -500,7 +502,7 @@ ModuleCollection.Source = function (path) {
         this.raw = fs.readFileSync(path);
     }
     catch (err) {
-        throw new Error(lib.format("{1}\n> {0}", path, err.message));
+        throw new Error(lib.format('{1}\n> {0}', path, err.message));
     }
 
     /**
@@ -573,8 +575,8 @@ lib.copy(ModuleCollection.Source, /** @lends module:collection~ModuleCollection.
      * @param {function} evaluator
      */
     addDirective: function (definition, evaluator) {
-        if (typeof evaluator !== "function") {
-            throw new Error("Directive evaluator cannot be not a function!");
+        if (typeof evaluator !== 'function') {
+            throw new Error('Directive evaluator cannot be not a function!');
         }
         this.directives.push(new this.Directive(definition, evaluator));
     },
@@ -593,12 +595,12 @@ lib.copy(ModuleCollection.Source, /** @lends module:collection~ModuleCollection.
      * @param {function} evaluator
      */
     addProcessor: function (definition, evaluator) {
-        if (typeof evaluator !== "function") {
-            throw new Error("Processor evaluator cannot be not a function!");
+        if (typeof evaluator !== 'function') {
+            throw new Error('Processor evaluator cannot be not a function!');
         }
 
         if (this.processors[definition]) {
-            throw new Error("Duplicate processor.");
+            throw new Error('Duplicate processor.');
         }
 
         this.processors[definition] = (new this.Processor(definition, evaluator));
@@ -645,14 +647,17 @@ lib.copy(ModuleCollection.Source.prototype, /** @lends module:collection~ModuleC
             // Only continue if its a block comment and starts with jsdoc syntax. Also prevet blocks having @ignore
             // tags from being parsed.
             // Pass the directives in given order
-            lib.isJSDocBlock(comment) && ModuleCollection.Source.directives.forEach(function (directive) {
+            lib.isJSDocBlock(comment) && ModuleCollection.Source.directives.forEach(function (
+                directive) {
                 // Call the directive replacer function and then pass the evaluator via a router
                 comment.value.replace(directive.pattern, (function () {
                     return function ($glob, $1) {
                         // Execute the evaluator in the source scope and send it a very specific argument set
                         // 1: namespace, 2+: all the specific matches of the name pattern
-                        ($1 && ($1 = $1.trim())) && (returns[1][directive.name] = directive.evaluator.apply(source,
-                                returns.concat(Array.prototype.slice.call(arguments, 1, -2))));
+                        ($1 && ($1 = $1.trim())) && (returns[1][directive.name] =
+                            directive.evaluator.apply(source,
+                                returns.concat(Array.prototype.slice.call(
+                                    arguments, 1, -2))));
                     };
                 }())); // end comment replacer callback
             }); // end order forEach
@@ -664,7 +669,7 @@ lib.copy(ModuleCollection.Source.prototype, /** @lends module:collection~ModuleC
      */
     process: function (invokedProcessors) {
         // Do not process if no processor has been invoked
-        if (!(typeof invokedProcessors === "object" && Object.keys(invokedProcessors).length)) {
+        if (!(typeof invokedProcessors === 'object' && Object.keys(invokedProcessors).length)) {
             return;
         }
 
@@ -704,7 +709,7 @@ ModuleCollection.analysers.push(function (stat) {
 
     for (prop in this.modules) {
         module = this.modules[prop];
-        stat[module.defined() ? "definedModules" : "orphanModules"].push(module);
+        stat[module.defined() ? 'definedModules' : 'orphanModules'].push(module);
         stat.numberOfExports += module.exports.length || 0;
     }
 });
