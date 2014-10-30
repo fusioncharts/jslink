@@ -3,11 +3,11 @@
  * @requires  lib
  */
 
-var E = "",
-    DOT = ".",
-    pathUtil = require("path"),
-    fs = require("fs"),
-    lib = require("./lib.js");
+var E = '',
+    DOT = '.',
+    pathUtil = require('path'),
+    fs = require('fs'),
+    lib = require('./lib.js');
 
 module.exports = {
     /**
@@ -16,12 +16,12 @@ module.exports = {
     directives: {
         // This function is passed to the replacer function to excavate the module name from the module
         // definition line and then add it to the collection.
-        "module": function (collection, args, name) {
+        module: function (collection, args, name) {
             return collection.addModule(name, this);
         },
 
         // Adds dependency relations.
-        "requires": function (collection, args, dependency) {
+        requires: function (collection, args, dependency) {
             var extern;
 
             // If module was not parsed, no need to proceed.
@@ -37,13 +37,13 @@ module.exports = {
 
                 // If the file does not exist, we raise an error.
                 if (!fs.existsSync(dependency)) {
-                    throw new Error (lib.format("External module file not found: \"{0}\"", dependency));
+                    throw new Error(lib.format('External module file not found: "{0}"', dependency));
                 }
 
                 // Now that we have an absolute module file name, we check whether it is already defined. If
                 // not, we do so.
                 (!(extern = collection.get(pathUtil.relative(DOT, dependency), true)).defined()) &&
-                    collection.addSource(dependency, extern);
+                collection.addSource(dependency, extern);
 
                 // Set the module name to the relative value so as not to output full path in report.
                 dependency = pathUtil.relative(DOT, dependency);
@@ -54,13 +54,13 @@ module.exports = {
 
         // This function searches whether the module definition has any export directive. This is defined here
         // to avoid repeated definition within loop.
-        "export": function (collection, args, exportPath) {
+        export: function (collection, args, exportPath) {
             collection.addExport(args.module, exportPath);
         }
     },
 
     processors: {
-        "removeblock": function () {
+        removeblock: function () {
             var blankArray = [],
                 tag,
                 i,
@@ -68,8 +68,8 @@ module.exports = {
 
             for (i = 0, ii = arguments.length; i < ii; i++) {
                 tag = arguments[i];
-                if (typeof tag !== "string") {
-                    throw new TypeError("removeblock parameter expects a tag name");
+                if (typeof tag !== 'string') {
+                    throw new TypeError('removeblock parameter expects a tag name');
                 }
 
                 // If the block is matched, then we remove it from content.

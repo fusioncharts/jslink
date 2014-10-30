@@ -159,6 +159,31 @@ jslink tests/structure/bilinear --destination=out/bilinear/
 The output folder should have two files `main.js` and `main.helper.js` as produced from the following dependency map.
 ![sample-jslink-output](https://raw.github.com/wiki/fusioncharts/jslink/jslink-bilinear-sample.png)
 
+The terminal output from the above command would be:
+```terminal
+user$ jslink tests/structure/bilinear --destination=out/bilinear/
+....
+  ✔︎ main.helper.js (4 modules)
+    - tests/structure/bilinear/locale.js
+    - tests/structure/bilinear/sys_probe.js
+    - tests/structure/bilinear/sys_flag.js
+    - tests/structure/bilinear/helper.js
+
+  ✔︎ main.js (9 modules)
+    - tests/structure/bilinear/json2.js
+    - tests/structure/bilinear/make_string.js
+    - tests/structure/bilinear/printf.js
+    - tests/structure/bilinear/compare.js
+    - tests/structure/bilinear/execute.js
+    - tests/structure/bilinear/parse.js
+    - tests/structure/bilinear/init.js
+    - tests/structure/bilinear/cleanup.js
+    - tests/structure/bilinear/main.js
+.
+13 files with 13 modules processed for 2 export directives.
+Preprocessing time: 18ms
+```
+
 ### Enabling overwriting of files
 By default `jslink` does not overwrite files and stops with error if it encounters that the output directory already
 contains a file with the same name as it is going to write. To instruct `jslink` to overwrite files, use the

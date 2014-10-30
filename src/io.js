@@ -8,21 +8,21 @@
  * @requires parsers
  */
 
-var // E = "",
-    DOT = ".",
+var // E = '',
+    DOT = '.',
 
     DEFAULT_INCLUDE_PATTERN = /.+\.js$/,
     DEFAULT_EXCLUDE_PATTERN = /^$/,
-    DEFAULT_DOT_FILENAME = "jslink.dot",
-    DEFAULT_OUT_DESTINATION = "out/",
+    DEFAULT_DOT_FILENAME = 'jslink.dot',
+    DEFAULT_OUT_DESTINATION = 'out/',
 
-    fs = require("fs"),
-    pathUtil = require("path"),
-    walkdir = require("walkdir"),
-    lib = require("./lib.js"),
-    parsers = require("./parsers.js"),
+    fs = require('fs'),
+    pathUtil = require('path'),
+    walkdir = require('walkdir'),
+    lib = require('./lib.js'),
+    parsers = require('./parsers.js'),
 
-    ModuleCollection = require("./collection.js"),
+    ModuleCollection = require('./collection.js'),
     writeSerializedModules; // function
 
 // Add the directives to the Source processor
@@ -46,13 +46,13 @@ writeSerializedModules = function (matrix, destination, overwrite) {
     pwdest = pathUtil.relative(DOT, destination);
 
     if (!fs.statSync(destination).isDirectory()) {
-        throw lib.format("Output destination is not a directory: \"{0}\"", destination);
+        throw lib.format('Output destination is not a directory: "{0}"', destination);
     }
 
     // Adds the content of source file to target file.
     appendSource = function (source) {
         lib.log(function () {
-            return lib.format("    - {0}", pathUtil.relative(DOT, source.path));
+            return lib.format('    - {0}', pathUtil.relative(DOT, source.path));
         }, true);
 
         /**
@@ -68,7 +68,7 @@ writeSerializedModules = function (matrix, destination, overwrite) {
 
         // In case of verbose mode, output the list of individual modules written to the export file.
         lib.log(function () {
-            return lib.format("\n  ✔︎ {0} ({1})", targetFileName, lib.plural(sources.length, "module"));
+            return lib.format('\n  ✔︎ {0} ({1})', targetFileName, lib.plural(sources.length, 'module'));
         }, true);
 
         targetFileName = pathUtil.join(destination, targetFileName); // append destination to file name
@@ -79,7 +79,7 @@ writeSerializedModules = function (matrix, destination, overwrite) {
 
     // Announce the commencement of writing output files in case verbose mode is enabled.
     lib.log(function () {
-        return lib.format("\nWriting export files to ./{0}", pwdest);
+        return lib.format('\nWriting export files to ./{0}', pwdest);
     });
 
     matrix.forEach(function (bundle) {
@@ -112,19 +112,19 @@ module.exports = {
 
         // If path does not exist, it is an error
         if (!fs.existsSync(path)) {
-            throw new Error(lib.format("Source path \"{0}\" does not exist or is not readable.", path));
+            throw new Error(lib.format('Source path "{0}" does not exist or is not readable.', path));
         }
 
         lib.log(function () {
-            return lib.format("\nReading files from: \"{0}\"", path);
+            return lib.format('\nReading files from: "{0}"', path);
         });
 
         // Iterate over the source directories provided the root path exists.
         walkdir.sync(path, {
-            /*jshint camelcase: false */// turn off since walkdir is 3rd-party.
+            /*jshint camelcase: false */ // turn off since walkdir is 3rd-party.
             no_return: true, // save memory even if one has loads!
             no_recurse: !recurse
-            /*jshint camelcase: true */
+                /*jshint camelcase: true */
         }, function (path, stat) {
             var pwdRelativePath;
 
@@ -152,7 +152,7 @@ module.exports = {
             collection._statFilesProcessed++; // increment success counter
 
             lib.log(function () {
-                return lib.format(" - {0}", pwdRelativePath);
+                return lib.format(' - {0}', pwdRelativePath);
             });
         });
 
@@ -221,7 +221,9 @@ module.exports = {
             option = options[processor.name];
 
             if (option) {
-                processorOptions[processor.name] =  Array.isArray(option) ? option : (option === true ? [] : [option]);
+                processorOptions[processor.name] = Array.isArray(option) ? option : (option === true ? [] : [
+                    option
+                ]);
             }
         }
 
@@ -244,12 +246,12 @@ module.exports = {
 
         // Ensure that the output file is not one of the input files!
         if (collection.sources[path]) {
-            throw new Error("The dot output file path overwrites input files!");
+            throw new Error('The dot output file path overwrites input files!');
         }
 
         // In case overwriting is disabled, we check whether the dot file already exists or not.
         if ((overwrite === false) && fs.existsSync(path)) {
-            throw new Error(lib.format("Cannot overwrite \"{0}\".", path));
+            throw new Error(lib.format('Cannot overwrite "{0}".', path));
         }
 
         // Thankfully, the dot file is generated by the collection's toString method itself.
