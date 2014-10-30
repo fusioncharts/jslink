@@ -12,7 +12,8 @@ var VERSIONSTRING = '1.1.3',
     ansi = require('ansi'),
     cursor = ansi(process.stdout),
     ModuleCollection = require('./collection.js'),
-    moduleIO = require('./io.js');
+    moduleIO = require('./io.js'),
+    program = require('commander');
 
 
 module.exports = /** @lends module:jslink */ {
@@ -42,43 +43,44 @@ module.exports = /** @lends module:jslink */ {
     /**
      * Process commandline
      */
-    cli: function (argv) { /** @todo refactor */
+    cli: function (argv) {
         // Parse all command-line arguments as an object and populate the unspecified properties with default
         // options.
-        var options = lib.argsArray2Object(argv.slice(2), 'source'),
-            conf;
+        var conf;
+
+        program
+        .version(VERSIONSTRING)
+        .option('--source <location>', 'The source directory to read modules from')
+        .option('--destination <location>', 'The output directory where all processed files will be saved')
+        .option('--includePattern <regex>', 'White-list of input files names from source directory')
+        .option('--excludePattern <regex>', 'Black-list of input files names from source directory')
+        .option('--conf <location>', 'jslink configuration JSON file location')
+        .option('--recursive', 'Look into all sub-directories while reading source directory')
+        .option('--strict', 'Run in strict mode')
+        .option('--verbose', 'Will output (hopefully) useful information during the linking process')
+        .option('--quiet', 'Don\'t show error messages')
+        .option('--exportmap', 'Generate a mpa structure of the collection.')
+        .option('--debug', 'Show error and debug messages')
+        .option('--test', 'Run jslink in test mode without writing to file-system')
+        .parse(argv);
 
         // Check whether to read options from a configuration file.
-        if (options.conf && (typeof (conf = lib.readJSONFromFile(options.conf)).options === 'object')) {
-            options = lib.fill(options, conf.options);
+        if (program.conf && (typeof (conf = lib.readJSONFromFile(program.conf)).options === 'object')) {
+            lib.fill(program, conf.options);
         }
-        options = lib.fill(options, module.exports.options);
-        options = lib.parseJSONBooleans(options, [
-            'recursive', 'exportmap', 'overwrite', 'strict', 'verbose', 'help', 'test', 'debug',
-            'quiet'
-        ]);
+        // set default values
+        lib.fill(program, module.exports.options);
 
-        // If version query is sent then ignore all other options
-        if (options.version) {
-            console.log('jslink ' + VERSIONSTRING);
-            return;
-        }
-
-        if (options.help) {
-            this.help();
-            return;
-        }
-
-        if (options.quiet) {
+        if (program.quiet) {
             global.jslinkQuiet = true;
         }
-        else if (options.verbose) {
+        else if (program.verbose) {
             global.jslinkVerbose = true;
         }
 
         // If the test flag is set to true, we do not initiate export of the files. Though we need to calculate
         // dependency in order to show results of cyclic errors
-        if (options.test) {
+        if (program.test) {
             cursor.write('Running in test mode.\n');
         }
 
@@ -88,12 +90,12 @@ module.exports = /** @lends module:jslink */ {
 
         // Do some sanity on the options.
         ['includePattern', 'excludePattern'].forEach(function (pattern) {
-            if (options[pattern] && !options[pattern].test) {
-                options[pattern] = new RegExp(options[pattern]);
+            if (program[pattern] && !program[pattern].test) {
+                program[pattern] = new RegExp(program[pattern]);
             }
         });
 
-        return this.parse(options, function (error, collection, stat) { // callback for output to console
+        return this.parse(program, function (error, collection, stat) { // callback for output to console
             cursor.reset().write('\n');
             if (error) {
                 cursor.red().write((error.message && error.message || error) + '\n');
@@ -109,7 +111,7 @@ module.exports = /** @lends module:jslink */ {
             console.timeEnd('Preprocessing time');
             cursor.reset();
             // throw error in console for debug mode so that call stack/trace is visible.
-            if (options.debug && error) {
+            if (program.debug && error) {
                 throw error;
             }
             process.exit(+!!(error || !collection));
@@ -175,33 +177,5 @@ module.exports = /** @lends module:jslink */ {
          */
         callback && callback(error, collection, stat);
         return collection;
-    },
-
-    /**
-     * This function neatly outputs the program's commandline options and usage guides to the terminal. This is
-     * generally called by `cli` parsing method when `--help` option is set to true.
-     * @private
-     */
-    help: function () {
-
-        cursor
-        // Split out the version
-            .reset()
-            .write('jslink <source-location> [<source-location>...] [--option[=<value>]...]\n\n')
-
-        // Show commandline usage instruction
-        .underline()
-            .write('Parameters').reset().write(':\n')
-
-        .write('--destination=<location>\tThe output directory where all processed files will be saved\n')
-            .write('--includePattern=<regex>\tWhite-list of input files names from source directory\n')
-            .write('--excludePattern=<regex>\tBlack-list of input files names from source directory\n')
-            .write('--source=<location> (...)\tThe source directory to read modules from\n')
-            .write('--conf=<location>\t\tjslink configuration JSON file location\n\n')
-            .write('--recursive\tLook into all sub-directories while reading source directory\n')
-            .write('--test\t\tRun jslink in test mode without writing to file-system\n')
-            .write('--verbose\tWill output (hopefully) useful information during the linking process\n')
-            .write('--help\t\tOutputs the usage help text to terminal\n')
-            .write('--version\tShows the jslink version being used\n\n');
     }
 };

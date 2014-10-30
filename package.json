@@ -32,7 +32,8 @@
   "dependencies": {
     "esprima": "~1.0.4",
     "walkdir": "0.0.7",
-    "ansi": "~0.2.1"
+    "ansi": "~0.2.1",
+    "commander": "^2.3.0"
   },
 
   "devDependencies": {
