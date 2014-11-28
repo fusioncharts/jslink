@@ -16,47 +16,7 @@ var SPC = ' ',
         comment: true,
         range: true // range mode is needed for easier buffer manipulation.
     },
-    ModuleCollection, // constructor
-    collectionTopoSort; // helper function
-
-/**
- * This function recursively traverses through modules (vertices of a DAG) and pushes them to a stack in a neatly sorted
- * order based on its dependency trace.
- *
- * @private
- * @param {module:collection~ModuleCollection.Module} module
- * @param {Array<module:collection~ModuleCollection.Module>} matrix
- */
-collectionTopoSort = function (module, _stack) {
-    var item;
-
-    if (module.topologicalMarker) {
-        delete module.topologicalMarker;
-        throw new Error(lib.format('Cyclic dependency error discovered while parsing {0}', module.name));
-    }
-
-    // Ensure that the _stack is present
-    if (!_stack) {
-        _stack = [];
-        _stack.order = collectionTopoSort.uid++;
-    }
-
-    if (module._topostry !== _stack.order) {
-        module.topologicalMarker = true;
-
-        for (item in module.requires) {
-            collectionTopoSort(module.requires[item], _stack); // recurse
-        }
-
-        delete module.topologicalMarker;
-        module._topostry = _stack.order; // mark
-        _stack.push(module); // Push into the right index
-    }
-
-    return _stack;
-};
-
-collectionTopoSort.uid = 1; // set counter for every new trace.
+    ModuleCollection; // constructor
 
 /**
  * Represents a collection of modules that have ability to depend on each other. The class maintains the dependency
@@ -242,7 +202,7 @@ lib.copy(ModuleCollection.prototype, /** @lends module:collection~ModuleCollecti
         // since they are happening on a single trace at a time
         modules = this.exports;
         for (module in modules) {
-            matrix.push(collectionTopoSort(modules[module]));
+            matrix.push(modules[module].sort());
         }
 
         return matrix;
@@ -472,6 +432,44 @@ lib.copy(ModuleCollection.Module.prototype, /** @lends module:collection~ModuleC
         return new ModuleCollection.Module(this.name, this.source);
     },
 
+    /**
+     * This function recursively traverses through modules (vertices of a DAG) and pushes them to a stack in a neatly
+     * sorted order based on its dependency trace.
+     *
+     * @returns {Array<module:collection~ModuleCollection.Module>}
+     *
+     * @note The sortiing method resembles topological sort with modifications made to suite this particular use-case.
+     */
+    sort: function (_stack) {
+        var module = this,
+            item;
+
+        if (module.topologicalMarker) {
+            delete module.topologicalMarker;
+            throw new Error(lib.format('Cyclic dependency error discovered while parsing {0}', module.name));
+        }
+
+        // Ensure that the _stack is present
+        if (!_stack) {
+            _stack = [];
+            _stack.order = (module.sort.uid = (module.sort.uid || 1) + 1);
+        }
+
+        if (module._topostry !== _stack.order) {
+            module.topologicalMarker = true;
+
+            for (item in module.requires) {
+                module.requires[item].sort(_stack); // recurse
+            }
+
+            delete module.topologicalMarker;
+            module._topostry = _stack.order; // mark
+            _stack.push(module); // Push into the right index
+        }
+
+        return _stack;
+    },
+
     toString: function () {
         return this.name;
     }
@@ -695,6 +693,7 @@ lib.copy(ModuleCollection.Source.prototype, /** @lends module:collection~ModuleC
         }
     }
 });
+
 
 ModuleCollection.analysers = [];
 
